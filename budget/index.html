@@ -454,7 +454,7 @@ const DEFAULT_RULES = [
   { pattern: "BETASHARES", category: "Shares", builtin: true },
   { pattern: "FUNDS TRANSFER CARD.*BEEM", category: "Beem", builtin: true },
   { pattern: "\\bBEEM\\b", category: "Beem", builtin: true },
-  { pattern: "DERRIMUT 24-7", category: "Sport", builtin: true },
+  { pattern: "DERRIMUT 24-?7", category: "Sport", builtin: true },
   { pattern: "BLUEFIT", category: "Sport", builtin: true },
   { pattern: "OAKLEIGH REC CENTRE", category: "Sport", builtin: true },
   { pattern: "WOOLWORTHS", category: "Groceries", builtin: true },
@@ -471,7 +471,7 @@ const DEFAULT_RULES = [
   { pattern: "POINTSBET|SPORTSBET|TAB\\.COM", category: "Recreation", builtin: true },
   { pattern: "ESCAPE GAMES", category: "Recreation", builtin: true },
   { pattern: "JHMR GOLF", category: "Sport", builtin: true },
-  { pattern: "IPY\\*KAYAHEALTHCLUBS|KAYA HEALTH", category: "Sport", builtin: true },
+  { pattern: "KAYAHEALTHCLUBS|KAYA HEALTH", category: "Sport", builtin: true },
   { pattern: "MYER\\b|UNIQLO", category: "Shopping", builtin: true },
   { pattern: "\\bMYKI\\b", category: "Transport", builtin: true },
   { pattern: "\\bUNITED\\b.*(CLAYTON|PETROLEUM)", category: "Transport", builtin: true },
@@ -486,17 +486,27 @@ function cloneDefaultRules() { return DEFAULT_RULES.map(r => ({ ...r })); }
 const NAME_TITLES = new Set(["MR", "MRS", "MS", "MISS", "MX", "DR"]);
 function buildOwnAccountMatcher(ownAccountNumbers, ownName) {
   const accts = (ownAccountNumbers || []).filter(Boolean);
-  let nameRe = null;
+  let nameRe = null, jointRe = null;
   if (ownName) {
     const parts = ownName.trim().split(/\s+/).filter(p => p.length > 1 && !NAME_TITLES.has(p.toUpperCase()));
     if (parts.length >= 2) {
       const first = parts[0], last = parts[parts.length - 1];
-      nameRe = new RegExp("\\b(" + first + "|" + first[0] + ")\\s+(\\w+\\s+)?" + last + "\\b", "i");
+      // "JOHN CITIZEN", "J CITIZEN", "JOHN A CITIZEN", or surname first as
+      // some banks write it: "CITIZEN,JOHN".
+      nameRe = new RegExp("\\b(" + first + "|" + first[0] + ")\\s+(\\w+\\s+)?" + last + "\\b" +
+        "|\\b" + last + "\\s*,\\s*(" + first + "|" + first[0] + ")\\b", "i");
+      // A joint account lists both holders and the bank cuts the text short,
+      // e.g. "JANE MARY CITIZEN & JOH": the user's first name, or at least
+      // its first three letters, straight after the "&".
+      const prefixes = [];
+      for (let k = Math.min(3, first.length); k <= first.length; k++) prefixes.push(first.slice(0, k));
+      jointRe = new RegExp("&\\s*(" + prefixes.join("|") + ")(?![A-Z])", "i");
     }
   }
   return function isSelfTransfer(desc) {
     for (const a of accts) { if (a && desc.includes(a)) return true; }
     if (nameRe && nameRe.test(desc)) return true;
+    if (jointRe && jointRe.test(desc)) return true;
     // A credit-card payment ("PAYMENT - THANK YOU" on the card's own statement,
     // or "BPAY TO ANZ CARDS" / "PAYMENT TO ANZ CARDS" on the linked bank account
     // that's paying it off) is money moved between the user's own accounts, not
@@ -730,7 +740,7 @@ function renderResults() {
 
   html += `<div class="stat-row">
     <section class="card stat-tile income"><div class="label">Income</div><div class="value num">${fmt(income)}</div></section>
-    <section class="card stat-tile"><div class="label">Total expenses</div><div class="value num">${fmt(totalExpense)}</div></section>
+    <section class="card stat-tile"><div class="label">Total expenses</div><div class="value num">${signedFmt(totalExpense)}</div></section>
     <section class="card stat-tile net"><div class="label">Net</div><div class="value num ${net >= 0 ? 'positive' : 'negative'}">${net >= 0 ? '+' : '−'}${fmt(Math.abs(net))}</div></section>
   </div>`;
 
