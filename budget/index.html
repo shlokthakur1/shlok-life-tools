@@ -1,0 +1,962 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<title>Statement Ledger · Life Tools</title>
+<link rel="icon" href="../assets/icon.svg" type="image/svg+xml">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Archivo:wght@600;700;800&family=Public+Sans:wght@400;500;600;700&family=IBM+Plex+Mono:wght@500;600&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="../assets/base.css">
+<style>
+  /* Tokens, buttons and the toast live in ../assets/base.css */
+  body{ --page-gutter:20px; }
+  .num{ font-variant-numeric: tabular-nums; }
+  .mono{ font-family:"IBM Plex Mono",ui-monospace,monospace; font-variant-numeric: tabular-nums; }
+
+  .wrap{ max-width:1180px; margin:0 auto; padding:28px 20px 80px; }
+
+  /* ---------- header ---------- */
+  .topbar{ display:flex; align-items:flex-start; justify-content:space-between; gap:24px; margin-bottom:28px; }
+  .brand{ display:flex; gap:14px; align-items:center; }
+  .brand-mark{ width:40px; height:40px; border-radius:10px; background:var(--accent); color:var(--accent-ink);
+    display:flex; align-items:center; justify-content:center; font-family:"Archivo",sans-serif; font-weight:800; font-size:18px; flex:none; }
+  .brand h1{ font-size:22px; font-weight:800; }
+  .brand p{ margin:2px 0 0; color:var(--ink-muted); font-size:13px; }
+  .top-actions{ display:flex; gap:8px; align-items:center; }
+
+  /* ---------- drop zone ---------- */
+  .dropzone{ border:1.5px dashed var(--line-strong); border-radius:14px; padding:28px 20px; text-align:center;
+    background:var(--surface); cursor:pointer; transition:border-color .15s, background .15s; }
+  .dropzone.drag{ border-color:var(--accent); background:var(--accent-wash); }
+  .dropzone h3{ font-size:15.5px; margin-bottom:4px; }
+  .dropzone p{ color:var(--ink-muted); font-size:13px; margin:0; }
+  .dropzone .dz-icon{ font-size:26px; margin-bottom:8px; }
+  input[type=file]{ display:none; }
+
+  .privacy-note{ display:flex; align-items:center; gap:7px; color:var(--ink-muted); font-size:12.5px; margin-top:10px; justify-content:center; }
+  .privacy-note svg{ flex:none; }
+
+  .statement-list{ display:flex; flex-wrap:wrap; gap:8px; margin-top:14px; }
+  .chip{ display:flex; align-items:center; gap:8px; background:var(--surface); border:1px solid var(--line);
+    border-radius:999px; padding:6px 8px 6px 12px; font-size:12.5px; }
+  .chip b{ font-weight:600; }
+  .chip .chip-x{ width:18px; height:18px; border-radius:50%; border:none; background:var(--surface-2); color:var(--ink-muted);
+    cursor:pointer; display:flex; align-items:center; justify-content:center; font-size:12px; line-height:1; }
+  .chip .chip-x:hover{ background:var(--critical-wash); color:var(--critical); }
+  .chip.err{ border-color:var(--critical); color:var(--critical); }
+
+  section.card{ background:var(--surface); border:1px solid var(--line); border-radius:14px; box-shadow:var(--shadow); }
+
+  /* ---------- month tabs ---------- */
+  .month-tabs{ display:flex; gap:6px; margin:26px 0 16px; flex-wrap:wrap; }
+  .month-tab{ padding:8px 16px; border-radius:9px; border:1px solid var(--line); background:var(--surface);
+    font-weight:700; font-size:13.5px; cursor:pointer; color:var(--ink-2); }
+  .month-tab.active{ background:var(--accent); border-color:var(--accent); color:var(--accent-ink); }
+
+  /* ---------- stat tiles ---------- */
+  .stat-row{ display:grid; grid-template-columns:repeat(3,1fr); gap:12px; margin-bottom:18px; }
+  .stat-tile{ padding:16px 18px; }
+  .stat-tile .label{ font-size:12px; color:var(--ink-muted); font-weight:600; text-transform:uppercase; letter-spacing:.04em; }
+  .stat-tile .value{ font-size:26px; font-weight:700; margin-top:6px; font-family:"Public Sans",sans-serif; }
+  .stat-tile.income .value{ color:var(--good); }
+  .stat-tile.net .value.negative{ color:var(--critical); }
+  .stat-tile.net .value.positive{ color:var(--good); }
+
+  /* ---------- ledger table ---------- */
+  .ledger{ padding:6px 0 10px; }
+  .ledger-head{ display:flex; align-items:center; justify-content:space-between; padding:14px 18px 4px; gap:12px; flex-wrap:wrap; }
+  .ledger-head h2{ font-size:16px; }
+  .ledger-head .sub{ font-size:12px; color:var(--ink-muted); }
+  .table-scroll{ overflow-x:auto; }
+  table.cat-table{ width:100%; border-collapse:collapse; min-width:640px; }
+  table.cat-table thead th{ text-align:right; padding:0 18px 8px; font-size:10.5px; font-weight:700; color:var(--ink-muted);
+    text-transform:uppercase; letter-spacing:.04em; white-space:nowrap; }
+  table.cat-table thead th:first-child{ text-align:left; }
+  .cat-row td{ padding:10px 18px; border-top:1px solid var(--line); font-size:13.5px; vertical-align:middle; }
+  .cat-row:hover td{ background:var(--surface-2); }
+  .cat-row{ cursor:pointer; }
+  .cat-name{ font-weight:600; display:flex; align-items:center; gap:8px; white-space:nowrap; }
+  .cat-name .car{ color:var(--ink-muted); font-size:10px; transition:transform .12s; }
+  .cat-row.open .car{ transform:rotate(90deg); }
+  .wk-amt{ text-align:right; white-space:nowrap; color:var(--ink-2); }
+  .wk-amt.negative{ color:var(--good); }
+  .cat-amt{ text-align:right; font-weight:600; white-space:nowrap; width:1%; }
+  .cat-amt.negative{ color:var(--good); } /* net inflow into an expense category */
+  .flag{ display:inline-flex; align-items:center; gap:4px; background:var(--warn-wash); color:var(--warn);
+    font-size:10.5px; font-weight:700; padding:2px 7px; border-radius:999px; margin-left:6px; text-transform:uppercase; letter-spacing:.03em; }
+  .cat-total-row td{ border-top:2px solid var(--line-strong); font-weight:700; padding-top:12px; }
+
+  .tx-detail{ display:none; }
+  .tx-detail.show{ display:table-row; }
+  .tx-detail td{ padding:0 18px 14px; border-top:none; }
+  .tx-mini{ background:var(--surface-2); border-radius:10px; overflow:hidden; }
+  .tx-mini-row{ display:grid; grid-template-columns:56px 1fr 130px 90px; grid-template-areas:"d desc sel amt";
+    gap:10px; padding:8px 14px; font-size:12.5px; border-bottom:1px solid var(--line); align-items:center; }
+  .tx-mini-row.plain{ grid-template-columns:56px 1fr 90px; grid-template-areas:"d desc amt"; }
+  .tx-mini-row:last-child{ border-bottom:none; }
+  .tx-mini-row .d{ grid-area:d; color:var(--ink-muted); }
+  .tx-mini-row .desc{ grid-area:desc; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
+  .tx-mini-row .cat-select-cell{ grid-area:sel; }
+  .tx-mini-row .amt{ grid-area:amt; text-align:right; font-weight:600; white-space:nowrap; }
+  .tx-mini-row select{ width:100%; font-size:11.5px; border-radius:6px; border:1px solid var(--line-strong); background:var(--surface);
+    color:var(--ink); padding:3px 4px; }
+
+  /* ---------- review / excluded panels ---------- */
+  .panel{ margin-top:16px; }
+  .panel-toggle{ width:100%; display:flex; align-items:center; justify-content:space-between; padding:14px 18px;
+    background:none; border:none; cursor:pointer; text-align:left; color:var(--ink); }
+  .panel-toggle h2{ font-size:15px; display:flex; align-items:center; gap:8px; }
+  .panel-toggle .car{ transition:transform .12s; color:var(--ink-muted); }
+  .panel.open .panel-toggle .car{ transform:rotate(90deg); }
+  .panel-body{ display:none; padding:0 18px 16px; }
+  .panel.open .panel-body{ display:block; }
+  .count-pill{ background:var(--warn-wash); color:var(--warn); font-size:11.5px; font-weight:700; padding:2px 8px; border-radius:999px; }
+  .count-pill.muted{ background:var(--surface-2); color:var(--ink-muted); }
+
+  /* ---------- settings modal ---------- */
+  .modal-backdrop{ position:fixed; inset:0; background:rgba(10,15,13,.45); display:none; align-items:flex-start;
+    justify-content:center; padding:5vh 20px; z-index:50; }
+  .modal-backdrop.show{ display:flex; }
+  .modal{ background:var(--surface); border-radius:14px; border:1px solid var(--line); box-shadow:var(--shadow);
+    max-width:640px; width:100%; max-height:90vh; overflow:auto; }
+  .modal-head{ display:flex; align-items:center; justify-content:space-between; padding:18px 20px; border-bottom:1px solid var(--line); }
+  .modal-body{ padding:16px 20px 20px; }
+  .rule-row{ display:grid; grid-template-columns:1fr 160px 32px; gap:8px; margin-bottom:8px; align-items:center; }
+  .rule-row input, .rule-row select{ padding:7px 9px; border-radius:7px; border:1px solid var(--line-strong);
+    background:var(--surface); color:var(--ink); font-size:12.5px; font-family:"IBM Plex Mono",monospace; }
+  .rule-row select{ font-family:inherit; }
+  .rule-row .del{ width:28px; height:28px; border-radius:7px; border:1px solid var(--line); background:var(--surface-2);
+    color:var(--ink-muted); cursor:pointer; }
+  .rule-row .del:hover{ color:var(--critical); border-color:var(--critical); }
+
+  .empty-state{ text-align:center; padding:60px 20px; color:var(--ink-muted); }
+  .empty-state .big{ font-size:34px; margin-bottom:10px; }
+
+  .foot-actions{ display:flex; gap:8px; padding:14px 18px 18px; border-top:1px solid var(--line); flex-wrap:wrap; }
+
+  @media (max-width:720px){
+    .stat-row{ grid-template-columns:1fr; }
+    .tx-mini-row{ grid-template-columns:44px 1fr 74px; grid-template-areas:"d desc amt" "sel sel sel"; row-gap:6px; }
+    .tx-mini-row.plain{ grid-template-columns:44px 1fr 74px; grid-template-areas:"d desc amt"; }
+  }
+</style>
+</head>
+<body data-tool="budget">
+<script src="../assets/nav.js"></script>
+
+<div class="wrap">
+
+  <div class="topbar">
+    <div class="brand">
+      <div class="brand-mark">SL</div>
+      <div>
+        <h1>Statement Ledger</h1>
+        <p>ANZ statements &rarr; your monthly budget categories</p>
+      </div>
+    </div>
+    <div class="top-actions">
+      <button class="btn btn-ghost" id="btnSettings" title="Categorisation rules">⚙︎ Rules</button>
+    </div>
+  </div>
+
+  <section id="uploadCard">
+    <div class="dropzone" id="dropzone" tabindex="0" role="button" aria-label="Upload PDF bank statements">
+      <div class="dz-icon">📄</div>
+      <h3>Drop your ANZ statement PDFs here</h3>
+      <p>or click to browse — everyday, savings &amp; credit card statements, any months, all at once</p>
+      <input type="file" id="fileInput" accept="application/pdf" multiple>
+    </div>
+    <div class="privacy-note">
+      <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10Z"/></svg>
+      Parsing happens entirely in your browser — your statements are never uploaded anywhere.
+    </div>
+    <div class="statement-list" id="statementList"></div>
+  </section>
+
+  <div id="resultsArea"></div>
+
+  <div class="empty-state" id="emptyState">
+    <div class="big">🧾</div>
+    <div>Upload a statement to see your categorised monthly figures.</div>
+  </div>
+
+</div>
+
+<div class="modal-backdrop" id="settingsBackdrop">
+  <div class="modal">
+    <div class="modal-head">
+      <h2 style="font-size:16px">Categorisation rules</h2>
+      <button class="btn btn-ghost btn-sm" id="closeSettings">Close</button>
+    </div>
+    <div class="modal-body">
+      <p style="font-size:12.5px;color:var(--ink-2);margin-top:0">Each rule matches text in a transaction's description (case-insensitive). The first matching rule wins. Add your own below — e.g. your gym, your landlord, your regular cafe.</p>
+      <div id="rulesList"></div>
+      <button class="btn btn-sm" id="addRule" style="margin-top:8px">+ Add rule</button>
+      <div style="display:flex;gap:8px;margin-top:18px;border-top:1px solid var(--line);padding-top:14px">
+        <button class="btn btn-sm" id="resetRules">Reset to defaults</button>
+        <button class="btn btn-sm" id="clearOverrides">Clear learned corrections</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<div class="toast" id="toast"></div>
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js" integrity="sha512-q+4liFwdPC/bNdhUpZx6aXDx/h77yEQtn4I1slHydcbZK34nLaR3cAeYSJshoxIOq3mjEf7xJE8YWIUHMn+oCQ==" crossorigin="anonymous" referrerpolicy="no-referrer"></script>
+<script>
+/* ====================================================================
+   PDF.js wiring
+   ==================================================================== */
+if (window['pdfjsLib']) {
+  pdfjsLib.GlobalWorkerOptions.workerSrc = 'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.worker.min.js';
+}
+
+/* ====================================================================
+   parser-core.js  (verbatim — verified against real ANZ Plus + ANZ credit
+   card statements with a Node harness using the same pdf.js API before
+   embedding here). Supports two layouts:
+     - "bank": ANZ Plus Everyday / Growth Saver
+     - "creditcard": ANZ credit card statements (e.g. ANZ Rewards Platinum)
+   ==================================================================== */
+function cleanAmount(s) {
+  if (!s) return 0;
+  const n = parseFloat(s.replace(/[^0-9.\-]/g, ""));
+  return isNaN(n) ? 0 : n;
+}
+function groupLines(items) {
+  const pts = items
+    .filter(it => it.str && it.str.trim().length)
+    .map(it => ({ text: it.str, x: it.transform[4], x1: it.transform[4] + it.width, y: Math.round(it.transform[5] * 2) / 2 }));
+  pts.sort((a, b) => (b.y - a.y) || (a.x - b.x));
+  const lines = [];
+  let cur = null;
+  for (const p of pts) {
+    if (!cur || Math.abs(cur.y - p.y) > 2.5) { cur = { y: p.y, words: [] }; lines.push(cur); }
+    cur.words.push(p);
+  }
+  for (const l of lines) l.words.sort((a, b) => a.x - b.x);
+  return lines;
+}
+const DESC_MAX_X0 = 345, DATE_MAX_X0 = 95;
+function bucketLine(words, colRightEdges) {
+  const [creditX1, debitX1, balanceX1] = colRightEdges;
+  const out = { date: [], desc: [], credit: [], debit: [], balance: [] };
+  for (const w of words) {
+    if (w.x < DATE_MAX_X0) out.date.push(w.text);
+    else if (w.x < DESC_MAX_X0) out.desc.push(w.text);
+    else if (w.x1 <= creditX1 + 2) out.credit.push(w.text);
+    else if (w.x1 <= debitX1 + 2) out.debit.push(w.text);
+    else out.balance.push(w.text);
+  }
+  return { date: out.date.join(" ").trim(), desc: out.desc.join(" ").trim(),
+    credit: out.credit.join(" ").trim(), debit: out.debit.join(" ").trim(), balance: out.balance.join(" ").trim() };
+}
+const DEFAULT_COL_RIGHT_EDGES = [411.0, 484.7, 558.4];
+const DAY_RE = /^\d{1,2}$/;
+const MONTH_RE = /^(Jan|Feb|Mar|Apr|May|Jun|Jul|Aug|Sep|Oct|Nov|Dec)$/;
+const MONTH_ABBR = ["Jan","Feb","Mar","Apr","May","Jun","Jul","Aug","Sep","Oct","Nov","Dec"];
+const BOILERPLATE_RES = [
+  /Australia and New Zealand Banking Group/i, /AFSL 234527/i, /Australian Credit Licence No\. 234527/i,
+  /Page \d+ of \d+/i,
+  /Please check your statement carefully/i, /Please check this statement of account carefully/i,
+  /ANZ of any unauthorised or disputed transactions/i,
+  /If you notice any errors/i, /For information about your account/i, /If an issue has not been resolved/i,
+  /afca\.org\.au/i, /^Opening Balance$/i,
+  /^ANZ REWARDS/i, /^ACCOUNT NUMBER:/i, /^STATEMENT PERIOD:/i,
+  /Please refer to the last four digits/i, /^IMPORTANT MESSAGES$/i, /THANK YOU FOR CHOOSING ANZ/i,
+  /OUR PAYMENT OPTIONS/i, /Cheque Particulars/i, /Drawer Bank Branch/i, /Teller Stamp Signature/i,
+  /^Interest Rates$/i, /Interest Rate \(?\d/i, /Minimum Repayment Warning/i,
+  /If you make (no additional charges|only the minimum payment)/i, /Having trouble making repayments/i,
+  /^Transaction Details$/i,
+];
+function isBoilerplate(text) { return BOILERPLATE_RES.some(re => re.test(text)); }
+
+async function parseBankStatement(pagesLines) {
+  const meta = { statementType: "bank", accountLabel: "", bsb: "", accountNumber: "", holderName: "", periodText: "", openingBalance: null, closingBalance: null };
+  const rawTx = [];
+  let colRightEdges = DEFAULT_COL_RIGHT_EDGES.slice();
+  let sawHeader = false;
+
+  for (const lines of pagesLines) {
+    for (let i = 0; i < lines.length; i++) {
+      const joined = lines[i].words.map(w => w.text).join(" ").trim();
+      if (/^ANZ Plus\b/i.test(joined) && !meta.accountLabel) meta.accountLabel = joined;
+      const periodMatch = joined.match(/^\d{1,2}\s+\w+\s+\d{4}\s*-\s*\d{1,2}\s+\w+\s+\d{4}$/);
+      if (periodMatch && !meta.periodText) meta.periodText = joined;
+
+      const w = lines[i].words;
+      const dateW = w.find(x => x.text === "Date"), descW = w.find(x => x.text === "Description");
+      const credW = w.find(x => x.text === "Credit"), debW = w.find(x => x.text === "Debit"), balW = w.find(x => x.text === "Balance");
+      if (dateW && descW && credW && debW && balW) { colRightEdges = [credW.x1, debW.x1, balW.x1]; sawHeader = true; }
+
+      if (/^Branch Number/i.test(joined) && lines[i + 1]) {
+        const valWords = lines[i + 1].words;
+        const digitText = valWords.filter(x => !/\$/.test(x.text)).map(x => x.text).join("").replace(/\s+/g, "");
+        const dollarGroups = valWords.filter(x => /\$/.test(x.text)).map(x => x.text);
+        if (digitText.length >= 10) { meta.bsb = digitText.slice(0, 6); meta.accountNumber = digitText.slice(6); }
+        if (dollarGroups.length >= 1) meta.openingBalance = cleanAmount(dollarGroups[0]);
+        if (dollarGroups.length >= 2) meta.closingBalance = cleanAmount(dollarGroups[1]);
+      }
+      const acctLabelItem = w.find(x => /Account Name/i.test(x.text));
+      if (acctLabelItem && lines[i + 1]) {
+        const thresholdX = acctLabelItem.x - 3;
+        const valueWords = lines[i + 1].words.filter(x => x.x >= thresholdX && !/\$/.test(x.text));
+        const name = valueWords.map(x => x.text).join(" ").trim();
+        if (name && !isBoilerplate(name)) meta.holderName = name;
+      }
+    }
+
+    for (const line of lines) {
+      const b = bucketLine(line.words, colRightEdges);
+      if (isBoilerplate(b.desc) || isBoilerplate(line.words.map(w => w.text).join(" "))) continue;
+      const dateParts = b.date.split(/\s+/).filter(Boolean);
+      const isNewRow = dateParts.length === 2 && DAY_RE.test(dateParts[0]) && MONTH_RE.test(dateParts[1]);
+      if (isNewRow) {
+        rawTx.push({ day: dateParts[0], mon: dateParts[1], desc: b.desc,
+          credit: cleanAmount(b.credit), debit: cleanAmount(b.debit), balance: cleanAmount(b.balance) });
+      } else if (b.desc && rawTx.length && !b.credit && !b.debit) {
+        rawTx[rawTx.length - 1].desc += " " + b.desc;
+      }
+    }
+  }
+  return { meta, transactions: rawTx, sawHeader };
+}
+
+const CC_DATE_RE = /^\d{2}\/\d{2}\/\d{4}$/;
+const CC_DATE_PROC_MAX_X0 = 95, CC_DATE_USED_MAX_X0 = 155, CC_CARD_MAX_X0 = 190, CC_DESC_MAX_X0 = 400;
+
+// The Amount/CR-flag/Balance zone is bucketed by regex over the joined text
+// rather than by x1 column edges: pdf.js sometimes merges "$149.00" and "CR"
+// into a single text item ("$149.00CR") and sometimes keeps them separate
+// ("$178.95" + "CR"), so a fixed x1 cutoff between them is not reliable.
+function ccBucketLine(words) {
+  const out = { dateProcessed: [], dateUsed: [], card: [], desc: [] };
+  const moneyWords = [];
+  for (const w of words) {
+    if (w.x < CC_DATE_PROC_MAX_X0) out.dateProcessed.push(w.text);
+    else if (w.x < CC_DATE_USED_MAX_X0) out.dateUsed.push(w.text);
+    else if (w.x < CC_CARD_MAX_X0) out.card.push(w.text);
+    else if (w.x < CC_DESC_MAX_X0) out.desc.push(w.text);
+    else moneyWords.push(w.text);
+  }
+  const moneyText = moneyWords.join(" ");
+  const amounts = moneyText.match(/\$[\d,]+\.\d{2}/g) || [];
+  const crFlag = /CR\b/.test(moneyText);
+  return {
+    dateProcessed: out.dateProcessed.join(" ").trim(), dateUsed: out.dateUsed.join(" ").trim(),
+    card: out.card.join(" ").trim(), desc: out.desc.join(" ").trim(),
+    amount: amounts[0] || "", balance: amounts[1] || "", crFlag,
+  };
+}
+function parseCCDate(s) {
+  const m = s.match(/^(\d{2})\/(\d{2})\/(\d{4})$/);
+  if (!m) return null;
+  return { day: String(parseInt(m[1], 10)), mon: MONTH_ABBR[parseInt(m[2], 10) - 1], year: m[3] };
+}
+
+function parseCreditCardStatement(pagesLines) {
+  const meta = { statementType: "creditcard", accountLabel: "", bsb: "", accountNumber: "", holderName: "", periodText: "", openingBalance: null, closingBalance: null };
+  const rawTx = [];
+  let sawHeader = false;
+
+  for (const lines of pagesLines) {
+    let inTable = false; // only parse rows/continuations between a header line and the next boilerplate break
+
+    for (let i = 0; i < lines.length; i++) {
+      const joined = lines[i].words.map(w => w.text).join(" ").trim();
+      const w = lines[i].words;
+
+      if (/^ANZ REWARDS/i.test(joined) && !meta.accountLabel) meta.accountLabel = joined;
+      const acctNumMatch = joined.match(/ACCOUNT NUMBER:\s*([\d\- ]+)/i);
+      if (acctNumMatch && !meta.accountNumber) meta.accountNumber = acctNumMatch[1].replace(/\D/g, "");
+      const periodMatch = joined.match(/STATEMENT PERIOD:\s*(.+)/i);
+      if (periodMatch && !meta.periodText) meta.periodText = periodMatch[1].trim();
+      const openMatch = joined.match(/Opening Balance\s*\$?([\d,]+\.\d{2})/i);
+      if (openMatch && meta.openingBalance === null) meta.openingBalance = cleanAmount(openMatch[1]);
+      const closeMatch = joined.match(/Closing Balance\s*\$?([\d,]+\.\d{2})/i);
+      if (closeMatch && meta.closingBalance === null) meta.closingBalance = cleanAmount(closeMatch[1]);
+
+      const acctLabelItem = w.find(x => /^Account Name$/i.test(x.text));
+      if (acctLabelItem && !meta.holderName) {
+        const valueWords = w.filter(x => x.x > acctLabelItem.x1 - 1 && !isBoilerplate(x.text));
+        const name = valueWords.map(x => x.text).join(" ").trim();
+        if (name) meta.holderName = name;
+      }
+
+      const amtW = w.find(x => /^Amount/i.test(x.text));
+      const balW = w.find(x => x.text === "Balance");
+      const tdW = w.find(x => /Transaction Details/i.test(x.text));
+      if (amtW && balW && tdW) { sawHeader = true; inTable = true; continue; }
+
+      if (isBoilerplate(joined)) { inTable = false; continue; }
+      if (!inTable) continue;
+
+      const b = ccBucketLine(w);
+      const isNewRow = CC_DATE_RE.test(b.dateProcessed) && CC_DATE_RE.test(b.dateUsed);
+      if (isNewRow) {
+        const d = parseCCDate(b.dateUsed);
+        if (d) {
+          const amt = cleanAmount(b.amount);
+          rawTx.push({ day: d.day, mon: d.mon, year: d.year, desc: b.desc,
+            credit: b.crFlag ? amt : 0, debit: b.crFlag ? 0 : amt, balance: cleanAmount(b.balance) });
+        }
+      } else if (b.desc && rawTx.length && !b.amount) {
+        rawTx[rawTx.length - 1].desc += " " + b.desc;
+      }
+    }
+  }
+  return { meta, transactions: rawTx, sawHeader };
+}
+
+function detectStatementType(pagesLines) {
+  for (const lines of pagesLines) {
+    for (const line of lines) {
+      const w = line.words;
+      const dateW = w.find(x => x.text === "Date"), descW = w.find(x => x.text === "Description");
+      const credW = w.find(x => x.text === "Credit"), debW = w.find(x => x.text === "Debit"), balW = w.find(x => x.text === "Balance");
+      if (dateW && descW && credW && debW && balW) return "bank";
+    }
+  }
+  for (const lines of pagesLines) {
+    for (const line of lines) {
+      const joined = line.words.map(x => x.text).join(" ");
+      if (/Transaction Details/i.test(joined) && /Amount/i.test(joined) && /Balance/i.test(joined)) return "creditcard";
+    }
+  }
+  return "unknown";
+}
+
+async function parsePdf(pdfDoc) {
+  const pagesLines = [];
+  for (let p = 1; p <= pdfDoc.numPages; p++) {
+    const page = await pdfDoc.getPage(p);
+    const content = await page.getTextContent();
+    pagesLines.push(groupLines(content.items));
+  }
+  const statementType = detectStatementType(pagesLines);
+  if (statementType === "bank") return parseBankStatement(pagesLines);
+  if (statementType === "creditcard") return parseCreditCardStatement(pagesLines);
+  return { meta: { statementType: "unknown", accountLabel: "", bsb: "", accountNumber: "", holderName: "", periodText: "", openingBalance: null, closingBalance: null }, transactions: [], sawHeader: false };
+}
+
+/* ====================================================================
+   categorize.js  (verbatim — verified against ground-truth totals)
+   ==================================================================== */
+const BUDGET_CATEGORIES = ["Income: Salary/Wages","Rent","Utilities & Subscription","Health & Personal Care",
+  "Groceries","Dining Out","Transport","Recreation","Shares","Beem","Sport","Shopping","Other"];
+
+const DEFAULT_RULES = [
+  { pattern: "PAY/SALARY FROM", category: "Income: Salary/Wages", builtin: true },
+  { pattern: "HENDERSON PROPERTY MANAGEMENT", category: "Rent", builtin: true },
+  { pattern: "RENTBETTER\\.COM\\.AU", category: "Utilities & Subscription", builtin: true },
+  { pattern: "BETASHARES", category: "Shares", builtin: true },
+  { pattern: "FUNDS TRANSFER CARD.*BEEM", category: "Beem", builtin: true },
+  { pattern: "\\bBEEM\\b", category: "Beem", builtin: true },
+  { pattern: "DERRIMUT 24-7", category: "Sport", builtin: true },
+  { pattern: "BLUEFIT", category: "Sport", builtin: true },
+  { pattern: "OAKLEIGH REC CENTRE", category: "Sport", builtin: true },
+  { pattern: "WOOLWORTHS", category: "Groceries", builtin: true },
+  { pattern: "OAKLEIGH FRESH", category: "Groceries", builtin: true },
+  { pattern: "7-ELEVEN", category: "Groceries", builtin: true },
+  { pattern: "DOORDASH|UBER \\*EATS|UBER EATS|SAN CHURRO|DODEE PAIDANG|TORO SUSHI|GRILLD|LEANY BEANS|PICKLEHOLIC|U GO CHADSTONE|HANARO", category: "Dining Out", builtin: true },
+  { pattern: "AMPOL|\\bBP \\b|SHELL|CALTEX|7-ELEVEN.*FUEL", category: "Transport", builtin: true },
+  { pattern: "LOTTE TR", category: "Shopping", builtin: true },
+  { pattern: "KMART|TARGET\\b|BIG W", category: "Shopping", builtin: true },
+  { pattern: "AMAZON MARKETPLACE|AMAZON AU", category: "Shopping", builtin: true },
+  { pattern: "SHAVER SHOP", category: "Health & Personal Care", builtin: true },
+  { pattern: "FITCHS PHCY|PHARMACY|CHEMIST", category: "Health & Personal Care", builtin: true },
+  { pattern: "THE CUTTING SHED|BARBER|HAIR", category: "Health & Personal Care", builtin: true },
+  { pattern: "POINTSBET|SPORTSBET|TAB\\.COM", category: "Recreation", builtin: true },
+  { pattern: "ESCAPE GAMES", category: "Recreation", builtin: true },
+  { pattern: "JHMR GOLF", category: "Sport", builtin: true },
+  { pattern: "IPY\\*KAYAHEALTHCLUBS|KAYA HEALTH", category: "Sport", builtin: true },
+  { pattern: "MYER\\b|UNIQLO", category: "Shopping", builtin: true },
+  { pattern: "\\bMYKI\\b", category: "Transport", builtin: true },
+  { pattern: "\\bUNITED\\b.*(CLAYTON|PETROLEUM)", category: "Transport", builtin: true },
+  { pattern: "WATER CORPORATION|ENERGYAUSTRALIA|\\bENERGY AUSTRALIA\\b", category: "Utilities & Subscription", builtin: true },
+  { pattern: "GOOGLE\\*GOOGLE ONE|GOOGLE ONE\\b", category: "Utilities & Subscription", builtin: true },
+  { pattern: "BRUNETTI|BALILA|NEIGHBOURHOOD PIZZA|CANNOLERIA|\\bYOMG\\b|CURRY GROVE", category: "Dining Out", builtin: true },
+  { pattern: "CREDIT INTEREST PAID|BONUS CREDIT INTEREST|RESIDENT WITHHOLD TAX", category: "__EXCLUDE_INTEREST__", builtin: true },
+  { pattern: "INTEREST CHARGED ON (PURCHASES|CASH ADVANCES|BALANCE TRANSFERS)", category: "Other", builtin: true },
+];
+function cloneDefaultRules() { return DEFAULT_RULES.map(r => ({ ...r })); }
+
+const NAME_TITLES = new Set(["MR", "MRS", "MS", "MISS", "MX", "DR"]);
+function buildOwnAccountMatcher(ownAccountNumbers, ownName) {
+  const accts = (ownAccountNumbers || []).filter(Boolean);
+  let nameRe = null;
+  if (ownName) {
+    const parts = ownName.trim().split(/\s+/).filter(p => p.length > 1 && !NAME_TITLES.has(p.toUpperCase()));
+    if (parts.length >= 2) {
+      const first = parts[0], last = parts[parts.length - 1];
+      nameRe = new RegExp("\\b(" + first + "|" + first[0] + ")\\s+(\\w+\\s+)?" + last + "\\b", "i");
+    }
+  }
+  return function isSelfTransfer(desc) {
+    for (const a of accts) { if (a && desc.includes(a)) return true; }
+    if (nameRe && nameRe.test(desc)) return true;
+    // A credit-card payment ("PAYMENT - THANK YOU" on the card's own statement,
+    // or "BPAY TO ANZ CARDS" / "PAYMENT TO ANZ CARDS" on the linked bank account
+    // that's paying it off) is money moved between the user's own accounts, not
+    // a new budget expense -- the underlying spend is already captured by the
+    // individual purchase transactions on the card statement.
+    if (/PAYMENT\s*[-–]\s*THANK\s*YOU/i.test(desc)) return true;
+    if (/\b(BPAY|PAYMENT)\s+TO\s+ANZ\s+CARDS?\b/i.test(desc)) return true;
+    return false;
+  };
+}
+function compileRules(rules) { return rules.map(r => ({ ...r, re: safeRegex(r.pattern) })); }
+function safeRegex(pattern) { try { return new RegExp(pattern, "i"); } catch (e) { return /$^/; } }
+function categorizeDescription(desc, compiledRules, overrides) {
+  const key = normalizeMerchantKey(desc);
+  if (overrides && overrides[key]) return { category: overrides[key], matched: "override" };
+  for (const r of compiledRules) { if (r.re.test(desc)) return { category: r.category, matched: r.pattern }; }
+  return { category: "Other", matched: null };
+}
+function normalizeMerchantKey(desc) {
+  return desc.replace(/#\d+/g, "").replace(/\b[0-9A-F]{16,}\b/gi, "")
+    .replace(/\bCARD\s+\d{3,4}\b/gi, "").replace(/EFFECTIVE DATE \d{1,2}\/\d{1,2}\/\d{4}/gi, "")
+    .replace(/\s+/g, " ").trim().toUpperCase().slice(0, 60);
+}
+function weekBucket(day) {
+  const d = parseInt(day, 10);
+  if (d <= 7) return 1;
+  if (d <= 14) return 2;
+  if (d <= 21) return 3;
+  return 4; // everything from the 22nd on — rough by design, not a precise calendar cutoff
+}
+function toTransaction(row, year, sourceFile, account) {
+  const y = row.year || year;
+  return { day: row.day, mon: row.mon, year: y, monthKey: `${y}-${row.mon}`, desc: row.desc.trim(),
+    week: weekBucket(row.day), credit: row.credit, debit: row.debit, balance: row.balance, sourceFile, account };
+}
+function buildSummary(allTransactions, ownAccountNumbers, ownName, rules, overrides) {
+  const isSelfTransfer = buildOwnAccountMatcher(ownAccountNumbers, ownName);
+  const compiled = compileRules(rules);
+  const byMonth = {};
+  for (const tx of allTransactions) {
+    const mk = tx.monthKey;
+    if (!byMonth[mk]) byMonth[mk] = { categories: {}, catTx: {}, excludedTransfers: [], excludedInterest: [], reviewList: [], all: [] };
+    const bucket = byMonth[mk];
+    bucket.all.push(tx);
+    if (isSelfTransfer(tx.desc)) { bucket.excludedTransfers.push(tx); continue; }
+    const { category, matched } = categorizeDescription(tx.desc, compiled, overrides);
+    if (category === "__EXCLUDE_INTEREST__") { bucket.excludedInterest.push(tx); continue; }
+    const net = category === "Income: Salary/Wages" ? tx.credit : (tx.debit - tx.credit);
+    bucket.categories[category] = (bucket.categories[category] || 0) + net;
+    if (!bucket.catTx[category]) bucket.catTx[category] = [];
+    bucket.catTx[category].push(tx);
+    if (matched === null) bucket.reviewList.push(tx);
+  }
+  return byMonth;
+}
+
+/* ====================================================================
+   App state + persistence
+   ==================================================================== */
+const MONTH_NAMES = { Jan:'January',Feb:'February',Mar:'March',Apr:'April',May:'May',Jun:'June',
+  Jul:'July',Aug:'August',Sep:'September',Oct:'October',Nov:'November',Dec:'December' };
+
+const state = {
+  statements: [],      // { fileName, meta, transactions: [row...], error }
+  rules: loadRules(),
+  overrides: loadOverrides(),
+  activeMonth: null,
+  openCats: new Set(),
+  reviewOpen: false,
+  excludedOpen: false,
+};
+
+function loadRules() {
+  try {
+    const raw = localStorage.getItem('statement-ledger.rules.v1');
+    if (raw) return JSON.parse(raw);
+  } catch (e) {}
+  return cloneDefaultRules();
+}
+function saveRules() {
+  try { localStorage.setItem('statement-ledger.rules.v1', JSON.stringify(state.rules)); } catch (e) {}
+}
+function loadOverrides() {
+  try {
+    const raw = localStorage.getItem('statement-ledger.overrides.v1');
+    if (raw) return JSON.parse(raw);
+  } catch (e) {}
+  return {};
+}
+function saveOverrides() {
+  try { localStorage.setItem('statement-ledger.overrides.v1', JSON.stringify(state.overrides)); } catch (e) {}
+}
+
+function showToast(msg) {
+  const t = document.getElementById('toast');
+  t.textContent = msg;
+  t.classList.add('show');
+  clearTimeout(showToast._t);
+  showToast._t = setTimeout(() => t.classList.remove('show'), 2200);
+}
+
+/* ====================================================================
+   File handling
+   ==================================================================== */
+const dropzone = document.getElementById('dropzone');
+const fileInput = document.getElementById('fileInput');
+
+dropzone.addEventListener('click', () => fileInput.click());
+dropzone.addEventListener('keydown', e => { if (e.key === 'Enter' || e.key === ' ') fileInput.click(); });
+['dragover','dragenter'].forEach(ev => dropzone.addEventListener(ev, e => { e.preventDefault(); dropzone.classList.add('drag'); }));
+['dragleave','drop'].forEach(ev => dropzone.addEventListener(ev, e => { e.preventDefault(); dropzone.classList.remove('drag'); }));
+dropzone.addEventListener('drop', e => handleFiles(e.dataTransfer.files));
+fileInput.addEventListener('change', e => handleFiles(e.target.files));
+
+async function handleFiles(fileList) {
+  const files = Array.from(fileList || []).filter(f => f.type === 'application/pdf' || /\.pdf$/i.test(f.name));
+  if (!files.length) return;
+  for (const file of files) await processFile(file);
+  fileInput.value = '';
+  render();
+}
+
+async function processFile(file) {
+  const entry = { fileName: file.name, meta: null, transactions: [], error: null };
+  state.statements.push(entry);
+  render();
+  try {
+    if (!window['pdfjsLib']) throw new Error('PDF engine failed to load (check your connection) — try reloading the page.');
+    const buf = await file.arrayBuffer();
+    const doc = await pdfjsLib.getDocument({ data: new Uint8Array(buf) }).promise;
+    const { meta, transactions, sawHeader } = await parsePdf(doc);
+    if (!sawHeader || !transactions.length) {
+      throw new Error("Couldn't find a recognisable transaction table in this PDF.");
+    }
+    const yearMatch = (meta.periodText || '').match(/(\d{4})\s*$/);
+    const year = yearMatch ? yearMatch[1] : String(new Date().getFullYear());
+    entry.meta = meta;
+    entry.transactions = transactions.map(row => toTransaction(row, year, file.name, meta.accountLabel || file.name));
+  } catch (err) {
+    entry.error = err && err.message ? err.message : String(err);
+  }
+}
+
+function removeStatement(idx) {
+  state.statements.splice(idx, 1);
+  render();
+}
+
+/* ====================================================================
+   Rendering
+   ==================================================================== */
+function render() {
+  renderStatementList();
+  renderResults();
+}
+
+function renderStatementList() {
+  const el = document.getElementById('statementList');
+  el.innerHTML = '';
+  state.statements.forEach((s, idx) => {
+    const chip = document.createElement('div');
+    chip.className = 'chip' + (s.error ? ' err' : '');
+    if (s.error) {
+      chip.innerHTML = `<span>⚠ <b>${escapeHtml(s.fileName)}</b> — ${escapeHtml(s.error)}</span>`;
+    } else if (s.meta) {
+      const typeLabel = s.meta.statementType === 'creditcard' ? 'Credit card' : 'Bank account';
+      chip.innerHTML = `<span><b>${escapeHtml(s.meta.accountLabel || s.fileName)}</b> · ${typeLabel} · ${escapeHtml(s.meta.periodText || '')} · ${s.transactions.length} txns</span>`;
+    } else {
+      chip.innerHTML = `<span>Reading ${escapeHtml(s.fileName)}…</span>`;
+    }
+    const x = document.createElement('button');
+    x.className = 'chip-x'; x.textContent = '×'; x.title = 'Remove';
+    x.onclick = () => removeStatement(idx);
+    chip.appendChild(x);
+    el.appendChild(chip);
+  });
+}
+
+function getOwnAccountsAndName() {
+  const accounts = new Set(); let name = null;
+  for (const s of state.statements) {
+    if (s.meta && s.meta.accountNumber) accounts.add(s.meta.accountNumber);
+    if (s.meta && s.meta.holderName) name = s.meta.holderName;
+  }
+  return { accounts: [...accounts], name };
+}
+
+function renderResults() {
+  const resultsArea = document.getElementById('resultsArea');
+  const emptyState = document.getElementById('emptyState');
+  const validStatements = state.statements.filter(s => s.meta && !s.error);
+
+  if (!validStatements.length) {
+    resultsArea.innerHTML = '';
+    emptyState.style.display = state.statements.length ? 'none' : 'block';
+    return;
+  }
+  emptyState.style.display = 'none';
+
+  const allTx = validStatements.flatMap(s => s.transactions);
+  const { accounts, name } = getOwnAccountsAndName();
+  const byMonth = buildSummary(allTx, accounts, name, state.rules, state.overrides);
+  const monthKeys = Object.keys(byMonth).sort();
+
+  if (!state.activeMonth || !byMonth[state.activeMonth]) state.activeMonth = monthKeys[monthKeys.length - 1];
+
+  let html = '';
+  html += `<div class="month-tabs">`;
+  for (const mk of monthKeys) {
+    const [y, mon] = mk.split('-');
+    const label = (MONTH_NAMES[mon] || mon) + ' ' + y;
+    html += `<button class="month-tab${mk === state.activeMonth ? ' active' : ''}" data-month="${mk}">${label}</button>`;
+  }
+  html += `</div>`;
+
+  const bucket = byMonth[state.activeMonth];
+  const income = bucket.categories['Income: Salary/Wages'] || 0;
+  const expenseCats = BUDGET_CATEGORIES.filter(c => c !== 'Income: Salary/Wages');
+  const totalExpense = expenseCats.reduce((s, c) => s + (bucket.categories[c] || 0), 0);
+  const net = income - totalExpense;
+
+  html += `<div class="stat-row">
+    <section class="card stat-tile income"><div class="label">Income</div><div class="value num">${fmt(income)}</div></section>
+    <section class="card stat-tile"><div class="label">Total expenses</div><div class="value num">${fmt(totalExpense)}</div></section>
+    <section class="card stat-tile net"><div class="label">Net</div><div class="value num ${net >= 0 ? 'positive' : 'negative'}">${net >= 0 ? '+' : '−'}${fmt(Math.abs(net))}</div></section>
+  </div>`;
+
+  const netByWeek = [0, 0, 0, 0];
+
+  html += `<section class="card ledger">
+    <div class="ledger-head"><h2>Category summary</h2>
+      <div><span class="sub">Weeks are rough day-of-month buckets (1–7 / 8–14 / 15–21 / 22–end), not exact calendar weeks</span></div>
+      <div style="display:flex;gap:8px">
+        <button class="btn btn-sm" id="btnCopy">⧉ Copy for Excel</button>
+      </div>
+    </div>
+    <div class="table-scroll"><table class="cat-table">
+    <thead><tr><th>Category</th><th>Week 1</th><th>Week 2</th><th>Week 3</th><th>Week 4</th><th>Total</th></tr></thead>
+    <tbody>`;
+
+  for (const cat of BUDGET_CATEGORIES) {
+    const val = bucket.categories[cat] || 0;
+    const isIncome = cat === 'Income: Salary/Wages';
+    const txns = bucket.catTx[cat] || [];
+    const weeks = weeklySums(txns, cat);
+    for (let w = 0; w < 4; w++) netByWeek[w] += isIncome ? weeks[w] : -weeks[w];
+    const flagInflow = !isIncome && val < 0;
+    const isOpen = state.openCats.has(cat);
+    html += `<tr class="cat-row${isOpen ? ' open' : ''}" data-cat="${escapeHtml(cat)}">
+      <td class="cat-name"><span class="car">▸</span>${escapeHtml(cat)}${flagInflow ? '<span class="flag">Net inflow</span>' : ''}</td>
+      <td class="wk-amt num${weeks[0] < 0 && !isIncome ? ' negative' : ''}">${signedFmt(weeks[0])}</td>
+      <td class="wk-amt num${weeks[1] < 0 && !isIncome ? ' negative' : ''}">${signedFmt(weeks[1])}</td>
+      <td class="wk-amt num${weeks[2] < 0 && !isIncome ? ' negative' : ''}">${signedFmt(weeks[2])}</td>
+      <td class="wk-amt num${weeks[3] < 0 && !isIncome ? ' negative' : ''}">${signedFmt(weeks[3])}</td>
+      <td class="cat-amt num ${val < 0 && !isIncome ? 'negative' : ''}">${signedFmt(val)}</td>
+    </tr>`;
+    html += `<tr class="tx-detail${isOpen ? ' show' : ''}" data-cat-detail="${escapeHtml(cat)}"><td colspan="6">`;
+    if (txns.length) {
+      html += `<div class="tx-mini">` + txns
+        .slice().sort((a,b)=> (b.day - a.day))
+        .map(t => txMiniRow(t, cat)).join('') + `</div>`;
+    } else {
+      html += `<div style="padding:10px 4px;color:var(--ink-muted);font-size:12.5px">No transactions in this category.</div>`;
+    }
+    html += `</td></tr>`;
+  }
+
+  html += `<tr class="cat-total-row"><td>Net (income − expenses)</td>
+    <td class="wk-amt num">${signedFmt(netByWeek[0])}</td><td class="wk-amt num">${signedFmt(netByWeek[1])}</td>
+    <td class="wk-amt num">${signedFmt(netByWeek[2])}</td><td class="wk-amt num">${signedFmt(netByWeek[3])}</td>
+    <td class="cat-amt num ${net<0?'negative':''}">${signedFmt(net)}</td></tr>`;
+  html += `</tbody></table></div></section>`;
+
+  // Review needed panel
+  const reviewCount = bucket.reviewList.length;
+  html += `<section class="card panel${state.reviewOpen ? ' open' : ''}" id="reviewPanel">
+    <button class="panel-toggle" id="toggleReview">
+      <h2><span class="car">▸</span>Needs your review ${reviewCount ? `<span class="count-pill">${reviewCount}</span>` : `<span class="count-pill muted">0</span>`}</h2>
+      <span style="font-size:12px;color:var(--ink-muted)">didn't match a rule — filed under Other</span>
+    </button>
+    <div class="panel-body">`;
+  if (reviewCount) {
+    html += `<div class="tx-mini">` + bucket.reviewList.slice().sort((a,b)=>b.day-a.day).map(t => txMiniRow(t, 'Other')).join('') + `</div>`;
+  } else {
+    html += `<div style="color:var(--ink-muted);font-size:12.5px">Everything matched a rule this month.</div>`;
+  }
+  html += `</div></section>`;
+
+  // Excluded transfers panel
+  const exTransfers = bucket.excludedTransfers, exInterest = bucket.excludedInterest;
+  const exCount = exTransfers.length + exInterest.length;
+  const exTotal = exTransfers.reduce((s,t)=>s+t.credit+t.debit,0);
+  html += `<section class="card panel${state.excludedOpen ? ' open' : ''}" id="excludedPanel">
+    <button class="panel-toggle" id="toggleExcluded">
+      <h2><span class="car">▸</span>Excluded from your budget <span class="count-pill muted">${exCount}</span></h2>
+      <span style="font-size:12px;color:var(--ink-muted)">transfers between your own accounts, card payments, and interest/tax</span>
+    </button>
+    <div class="panel-body">`;
+  if (exTransfers.length) {
+    html += `<div style="font-size:12.5px;color:var(--ink-2);margin-bottom:6px">Self-transfers &amp; credit card payments (both sides of ${exTransfers.length} movements, ${fmt(exTotal)} total moved — not income or spending):</div>
+      <div class="tx-mini">` + exTransfers.slice().sort((a,b)=>b.day-a.day).map(t => txMiniRowPlain(t)).join('') + `</div>`;
+  }
+  if (exInterest.length) {
+    html += `<div style="font-size:12.5px;color:var(--ink-2);margin:12px 0 6px">Interest &amp; withholding tax (not counted as Salary/Wages):</div>
+      <div class="tx-mini">` + exInterest.slice().sort((a,b)=>b.day-a.day).map(t => txMiniRowPlain(t)).join('') + `</div>`;
+  }
+  if (!exCount) html += `<div style="color:var(--ink-muted);font-size:12.5px">None this month.</div>`;
+  html += `</div></section>`;
+
+  resultsArea.innerHTML = html;
+  wireResultsEvents(bucket);
+}
+
+function txMiniRow(t, currentCat) {
+  const amt = t.credit > 0 ? `+${fmt(t.credit)}` : `−${fmt(t.debit)}`;
+  const amtClass = t.credit > 0 ? 'negative' : '';
+  const opts = BUDGET_CATEGORIES.map(c => `<option value="${escapeHtml(c)}"${c===currentCat?' selected':''}>${escapeHtml(c)}</option>`).join('');
+  return `<div class="tx-mini-row" title="${escapeHtml(t.desc)}">
+    <div class="d">${t.day} ${t.mon}</div>
+    <div class="desc">${escapeHtml(t.desc)}</div>
+    <div class="cat-select-cell"><select data-reassign="${encodeURIComponent(t.desc)}">${opts}</select></div>
+    <div class="amt num ${amtClass}">${amt}</div>
+  </div>`;
+}
+function txMiniRowPlain(t) {
+  const amt = t.credit > 0 ? `+${fmt(t.credit)}` : `−${fmt(t.debit)}`;
+  return `<div class="tx-mini-row plain" title="${escapeHtml(t.desc)}">
+    <div class="d">${t.day} ${t.mon}</div>
+    <div class="desc">${escapeHtml(t.desc)}</div>
+    <div class="amt num">${amt}</div>
+  </div>`;
+}
+
+function wireResultsEvents(bucket) {
+  document.querySelectorAll('.month-tab').forEach(btn => {
+    btn.onclick = () => { state.activeMonth = btn.dataset.month; render(); };
+  });
+  document.querySelectorAll('.cat-row').forEach(row => {
+    row.onclick = () => {
+      const cat = row.dataset.cat;
+      if (state.openCats.has(cat)) state.openCats.delete(cat); else state.openCats.add(cat);
+      render();
+    };
+  });
+  document.querySelectorAll('[data-reassign]').forEach(sel => {
+    sel.addEventListener('click', e => e.stopPropagation());
+    sel.addEventListener('change', e => {
+      e.stopPropagation();
+      const desc = decodeURIComponent(sel.dataset.reassign);
+      const key = normalizeMerchantKey(desc);
+      state.overrides[key] = sel.value;
+      saveOverrides();
+      showToast(`Saved — "${truncate(desc,40)}" will file under ${sel.value} from now on`);
+      render();
+    });
+  });
+  const toggleReview = document.getElementById('toggleReview');
+  if (toggleReview) toggleReview.onclick = () => { state.reviewOpen = !state.reviewOpen; render(); };
+  const toggleExcluded = document.getElementById('toggleExcluded');
+  if (toggleExcluded) toggleExcluded.onclick = () => { state.excludedOpen = !state.excludedOpen; render(); };
+
+  const btnCopy = document.getElementById('btnCopy');
+  if (btnCopy) btnCopy.onclick = () => copyForExcel(bucket);
+}
+
+function copyForExcel(bucket) {
+  const header = ['Category', 'Week 1', 'Week 2', 'Week 3', 'Week 4', 'Total'];
+  const rows = [header];
+  const netByWeek = [0, 0, 0, 0];
+  let netTotal = 0;
+  for (const cat of BUDGET_CATEGORIES) {
+    const isIncome = cat === 'Income: Salary/Wages';
+    const txns = bucket.catTx[cat] || [];
+    const weeks = weeklySums(txns, cat);
+    const total = bucket.categories[cat] || 0;
+    for (let w = 0; w < 4; w++) netByWeek[w] += isIncome ? weeks[w] : -weeks[w];
+    netTotal += isIncome ? total : -total;
+    rows.push([cat, ...weeks.map(v => v.toFixed(2)), total.toFixed(2)]);
+  }
+  rows.push(['Net (income − expenses)', ...netByWeek.map(v => v.toFixed(2)), netTotal.toFixed(2)]);
+  const text = rows.map(r => r.join('\t')).join('\n');
+  const done = () => showToast('Copied — paste straight into Excel (category, 4 weeks, total)');
+  const fallback = () => showCopyFallback(text);
+  if (navigator.clipboard && navigator.clipboard.writeText) {
+    navigator.clipboard.writeText(text).then(done).catch(fallback);
+  } else {
+    fallback();
+  }
+}
+function showCopyFallback(text) {
+  const backdrop = document.createElement('div');
+  backdrop.className = 'modal-backdrop show';
+  backdrop.innerHTML = `<div class="modal" style="max-width:460px">
+    <div class="modal-head"><h2 style="font-size:15px">Select all &amp; copy</h2>
+      <button class="btn btn-ghost btn-sm" id="_copyFallbackClose">Close</button></div>
+    <div class="modal-body">
+      <p style="font-size:12.5px;color:var(--ink-2);margin-top:0">Clipboard access was blocked — select the text below and copy it manually (Ctrl/Cmd+C), then paste into Excel.</p>
+      <textarea style="width:100%;height:200px;font-family:'IBM Plex Mono',monospace;font-size:12px;padding:10px;border-radius:8px;border:1px solid var(--line-strong);background:var(--surface-2);color:var(--ink)" readonly></textarea>
+    </div></div>`;
+  document.body.appendChild(backdrop);
+  const ta = backdrop.querySelector('textarea');
+  ta.value = text;
+  ta.focus(); ta.select();
+  backdrop.querySelector('#_copyFallbackClose').onclick = () => backdrop.remove();
+  backdrop.addEventListener('click', e => { if (e.target === backdrop) backdrop.remove(); });
+}
+
+function weeklySums(txns, cat) {
+  const isIncome = cat === 'Income: Salary/Wages';
+  const sums = [0, 0, 0, 0];
+  for (const t of txns) {
+    const net = isIncome ? t.credit : (t.debit - t.credit);
+    sums[t.week - 1] += net;
+  }
+  return sums;
+}
+function fmt(n) { return '$' + (Math.round(n * 100) / 100).toLocaleString('en-AU', { minimumFractionDigits: 2, maximumFractionDigits: 2 }); }
+function signedFmt(n) { return (n < 0 ? '−' : '') + fmt(Math.abs(n)); }
+function escapeHtml(s) { return String(s).replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c])); }
+function truncate(s, n) { return s.length > n ? s.slice(0, n - 1) + '…' : s; }
+
+/* ====================================================================
+   Settings modal (rules editor)
+   ==================================================================== */
+const settingsBackdrop = document.getElementById('settingsBackdrop');
+document.getElementById('btnSettings').onclick = () => { renderRulesList(); settingsBackdrop.classList.add('show'); };
+document.getElementById('closeSettings').onclick = () => settingsBackdrop.classList.remove('show');
+settingsBackdrop.addEventListener('click', e => { if (e.target === settingsBackdrop) settingsBackdrop.classList.remove('show'); });
+
+function renderRulesList() {
+  const el = document.getElementById('rulesList');
+  el.innerHTML = state.rules.map((r, i) => `
+    <div class="rule-row" data-idx="${i}">
+      <input type="text" value="${escapeHtml(r.pattern)}" data-field="pattern" placeholder="text or regex to match">
+      <select data-field="category">${BUDGET_CATEGORIES.map(c => `<option value="${escapeHtml(c)}"${c===r.category?' selected':''}>${escapeHtml(c)}</option>`).join('')}</select>
+      <button class="del" title="Remove rule">×</button>
+    </div>`).join('');
+  el.querySelectorAll('.rule-row').forEach(row => {
+    const idx = +row.dataset.idx;
+    row.querySelector('[data-field=pattern]').addEventListener('input', e => { state.rules[idx].pattern = e.target.value; saveRules(); });
+    row.querySelector('[data-field=category]').addEventListener('change', e => { state.rules[idx].category = e.target.value; saveRules(); });
+    row.querySelector('.del').addEventListener('click', () => { state.rules.splice(idx, 1); saveRules(); renderRulesList(); render(); });
+  });
+}
+document.getElementById('addRule').onclick = () => {
+  state.rules.push({ pattern: '', category: 'Other', builtin: false });
+  saveRules(); renderRulesList();
+};
+document.getElementById('resetRules').onclick = () => {
+  if (confirm('Reset to the default rule set? Your custom rules will be lost.')) {
+    state.rules = cloneDefaultRules(); saveRules(); renderRulesList(); render();
+  }
+};
+document.getElementById('clearOverrides').onclick = () => {
+  if (confirm('Clear all learned per-merchant corrections?')) {
+    state.overrides = {}; saveOverrides(); showToast('Learned corrections cleared'); render();
+  }
+};
+
+render();
+</script>
+
+</body></html>

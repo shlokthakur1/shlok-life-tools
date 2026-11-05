@@ -1,0 +1,673 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<title>To-do · Life Tools</title>
+<link rel="icon" href="../assets/icon.svg" type="image/svg+xml">
+<meta name="apple-mobile-web-app-title" content="To-do">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Archivo:wght@600;700;800&family=Public+Sans:wght@400;500;600;700&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="../assets/base.css">
+<style>
+  body{ --page-max:640px; }
+  .page{ max-width:640px; margin:0 auto; padding:22px 16px 96px; }
+
+  /* ---------- header ---------- */
+  .todo-head{ display:flex; align-items:flex-end; justify-content:space-between; gap:12px; margin-bottom:16px; }
+  .todo-head h1{ font-size:28px; font-weight:800; }
+  .todo-head .sub{ margin:4px 0 0; color:var(--ink-muted); font-size:13px; }
+  .head-actions{ display:flex; align-items:center; gap:2px; }
+  .sync{ font-size:12px; color:var(--ink-muted); margin-right:6px; white-space:nowrap; }
+  .sync.saving{ color:var(--warn); }
+  .sync.error{ color:var(--critical); }
+  .btn-icon{ width:38px; height:38px; padding:0; justify-content:center; font-size:17px; color:var(--ink-2); }
+  .btn-icon.spin{ animation:spin .8s linear infinite; }
+  @keyframes spin{ to{ transform:rotate(360deg); } }
+
+  .banner{ display:flex; align-items:center; justify-content:space-between; gap:12px; padding:12px 14px;
+    border-radius:12px; background:var(--accent-wash); color:var(--ink-2); font-size:13px; line-height:1.45; margin-bottom:14px; }
+  .banner b{ color:var(--ink); }
+  .banner .btn{ flex:none; }
+
+  /* ---------- add form ---------- */
+  .add-form{ display:flex; gap:8px; margin-bottom:22px; }
+  .add-form input, .add-form select{ font:inherit; font-size:16px; color:var(--ink); background:var(--surface);
+    border:1px solid var(--line-strong); border-radius:10px; }
+  .add-form input{ flex:1; min-width:0; padding:11px 14px; }
+  .add-form select{ flex:none; max-width:34%; padding:11px 8px; }
+  .add-form input:focus-visible, .add-form select:focus-visible{ outline:2px solid var(--accent); outline-offset:1px; border-color:var(--accent); }
+  .add-form .btn{ font-size:15px; padding:0 18px; border-radius:10px; }
+
+  /* ---------- list ---------- */
+  .group{ margin-bottom:18px; }
+  .group-title{ font-family:"Public Sans",system-ui,sans-serif; font-size:12px; font-weight:700; color:var(--ink-muted);
+    text-transform:uppercase; letter-spacing:.05em; margin:0 4px 7px; }
+  .items{ list-style:none; margin:0; padding:0; background:var(--surface); border:1px solid var(--line);
+    border-radius:14px; box-shadow:var(--shadow); overflow:hidden; }
+  .item{ display:flex; align-items:center; border-top:1px solid var(--line); }
+  .item:first-child{ border-top:none; }
+  .item label{ flex:1; min-width:0; display:flex; align-items:flex-start; gap:12px; cursor:pointer;
+    padding:13px 6px 13px calc(14px + var(--indent, 0) * 22px); }
+  .item input[type=checkbox]{ appearance:none; -webkit-appearance:none; flex:none; width:22px; height:22px; margin:0;
+    border-radius:50%; border:2px solid var(--line-strong); background:var(--surface); display:grid; place-content:center;
+    cursor:pointer; transition:background .15s, border-color .15s; }
+  .item input[type=checkbox]:hover{ border-color:var(--accent); }
+  .item input[type=checkbox]:checked{ background:var(--accent); border-color:var(--accent); }
+  .item input[type=checkbox]:checked::after{ content:""; width:9px; height:5px; border:2px solid var(--accent-ink);
+    border-top:0; border-right:0; transform:translate(0,-1px) rotate(-45deg); }
+  .item input[type=checkbox]:focus-visible{ outline:2px solid var(--accent); outline-offset:2px; }
+  .item .text{ font-size:15px; line-height:22px; overflow-wrap:anywhere; }
+  .item.done .text{ color:var(--ink-muted); text-decoration:line-through; }
+  .item.unsaved .text{ opacity:.65; }
+  .del{ flex:none; width:40px; height:40px; margin-right:6px; border:none; border-radius:8px; background:none;
+    color:var(--ink-muted); font-size:20px; line-height:1; cursor:pointer; }
+  .del:hover{ color:var(--critical); background:var(--critical-wash); }
+  .del:focus-visible{ outline:2px solid var(--accent); }
+  @media (hover:hover){
+    .del{ opacity:0; }
+    .item:hover .del, .del:focus-visible{ opacity:1; }
+  }
+
+  .empty{ text-align:center; color:var(--ink-muted); padding:36px 16px 28px; font-size:14px; }
+  .empty .big{ font-size:30px; margin-bottom:6px; color:var(--good); }
+
+  .done-group{ margin-top:6px; }
+  .done-group summary{ list-style:none; display:flex; align-items:center; gap:8px; cursor:pointer;
+    padding:8px 4px; font-size:13px; font-weight:600; color:var(--ink-2); }
+  .done-group summary::-webkit-details-marker{ display:none; }
+  .done-group summary .car{ color:var(--ink-muted); font-size:10px; transition:transform .12s; }
+  .done-group[open] summary .car{ transform:rotate(90deg); }
+  .done-group summary:focus-visible{ outline:2px solid var(--accent); border-radius:6px; }
+  .done-group .items{ margin-top:6px; }
+  .done-actions{ display:flex; justify-content:flex-end; margin-top:8px; }
+
+  .error-box{ padding:16px; border-radius:12px; background:var(--critical-wash); color:var(--critical); font-size:13.5px; line-height:1.5; }
+  .skeleton{ height:50px; border-radius:14px; background:var(--surface); border:1px solid var(--line); margin-bottom:8px; opacity:.6; }
+
+  /* ---------- settings dialog ---------- */
+  dialog{ width:min(520px, calc(100vw - 32px)); max-height:calc(100dvh - 48px); padding:0; border:1px solid var(--line);
+    border-radius:16px; background:var(--surface); color:var(--ink); box-shadow:var(--shadow); }
+  dialog::backdrop{ background:rgba(10,15,13,.45); }
+  .dlg{ padding:20px; }
+  .dlg h2{ font-size:18px; margin-bottom:8px; }
+  .dlg p, .dlg ol{ font-size:13px; line-height:1.55; color:var(--ink-2); margin:0 0 12px; }
+  .dlg ol{ padding-left:20px; }
+  .dlg code{ font-size:12px; background:var(--surface-2); padding:1px 5px; border-radius:5px; }
+  .field{ display:block; margin-bottom:12px; font-size:12.5px; font-weight:600; color:var(--ink-2); }
+  .field input{ display:block; width:100%; margin-top:5px; padding:10px 12px; font:inherit; font-size:16px; font-weight:400;
+    color:var(--ink); background:var(--surface); border:1px solid var(--line-strong); border-radius:9px; }
+  .field input:focus-visible{ outline:2px solid var(--accent); outline-offset:1px; border-color:var(--accent); }
+  .dlg details{ margin:4px 0 14px; font-size:13px; }
+  .dlg summary{ cursor:pointer; color:var(--ink-2); font-weight:600; margin-bottom:10px; }
+  .dlg-actions{ display:flex; gap:8px; align-items:center; flex-wrap:wrap; border-top:1px solid var(--line); padding-top:14px; }
+  .dlg-actions .spacer{ flex:1; }
+  .dlg-msg{ font-size:12.5px; margin:0 0 12px; }
+  .dlg-msg.error{ color:var(--critical); }
+</style>
+</head>
+<body data-tool="todo">
+<script src="../assets/nav.js"></script>
+
+<main class="page">
+  <header class="todo-head">
+    <div>
+      <h1>To-do</h1>
+      <p class="sub" id="summary">Loading…</p>
+    </div>
+    <div class="head-actions">
+      <span class="sync" id="syncStatus" role="status" aria-live="polite"></span>
+      <button class="btn btn-ghost btn-icon" id="btnRefresh" type="button" title="Refresh" aria-label="Refresh">↻</button>
+      <button class="btn btn-ghost btn-icon" id="btnSettings" type="button" title="Sync settings" aria-label="Sync settings">⚙︎</button>
+    </div>
+  </header>
+
+  <div class="banner" id="connectBanner" hidden>
+    <div><b>View only on this device.</b> Connect GitHub once to add and tick off tasks here.</div>
+    <button class="btn btn-sm btn-primary" id="btnConnect" type="button">Connect</button>
+  </div>
+
+  <form class="add-form" id="addForm" autocomplete="off">
+    <input id="addText" type="text" placeholder="Add a task…" maxlength="300" aria-label="New task" enterkeyhint="done">
+    <select id="addSection" aria-label="Section" hidden></select>
+    <button class="btn btn-primary" type="submit">Add</button>
+  </form>
+
+  <div id="list"><div class="skeleton"></div><div class="skeleton"></div><div class="skeleton"></div></div>
+</main>
+
+<dialog id="settings" aria-labelledby="settingsTitle">
+  <form class="dlg" id="settingsForm" method="dialog">
+    <h2 id="settingsTitle">Sync with GitHub</h2>
+    <p>Your list is the file <code id="fileLabel"></code> in your GitHub repo. Anyone can view it there, but editing needs a token. To edit from this browser, create a token once:</p>
+    <ol>
+      <li>Open <a id="tokenLink" href="https://github.com/settings/personal-access-tokens/new" target="_blank" rel="noopener noreferrer">GitHub → new fine-grained token</a>.</li>
+      <li>Under <b>Repository access</b>, choose <b>Only select repositories</b> → <b id="repoNameLabel"></b>.</li>
+      <li>Check <b>Permissions → Contents</b> is <b>Read and write</b>, then generate it and paste it below.</li>
+    </ol>
+    <p class="dlg-msg" id="settingsMsg" hidden></p>
+    <label class="field">GitHub token
+      <input type="password" id="tokenInput" autocomplete="off" spellcheck="false" autocapitalize="off" placeholder="github_pat_…">
+    </label>
+    <details>
+      <summary>Advanced</summary>
+      <label class="field">Repository (owner/name) <input id="repoInput" spellcheck="false" autocapitalize="off"></label>
+      <label class="field">Branch <input id="branchInput" spellcheck="false" autocapitalize="off"></label>
+      <label class="field">File <input id="pathInput" spellcheck="false" autocapitalize="off"></label>
+    </details>
+    <p style="font-size:12px;color:var(--ink-muted)">The token is saved only in this browser on this device.</p>
+    <div class="dlg-actions">
+      <button class="btn btn-sm" type="button" id="forgetToken">Forget token</button>
+      <span class="spacer"></span>
+      <button class="btn btn-sm" type="button" id="cancelSettings">Cancel</button>
+      <button class="btn btn-sm btn-primary" type="submit" id="saveSettings">Save</button>
+    </div>
+  </form>
+</dialog>
+
+<div class="toast" id="toast" role="status" aria-live="polite"></div>
+
+<script>
+/* ====================================================================
+   The list is a Markdown checklist in the repo (data/todo.md by default),
+   read and written through the GitHub contents API. Claude sessions edit
+   the same file with git, so the format must stay plain Markdown:
+     - [ ] open task
+     - [x] finished task
+     ## Section headings group the tasks below them
+   Anything else in the file is left untouched.
+   ==================================================================== */
+const DEFAULTS = { repo: 'shlokthakur1/shlok-life-tools', branch: 'main', path: 'data/todo.md', token: '' };
+const STORAGE_KEY = 'life-tools.todo.v1';
+
+let cfg = loadConfig();
+const state = {
+  remote: null,     // markdown as last seen on GitHub
+  sha: null,        // blob sha of `remote`, required to update the file
+  pending: [],      // edits not yet saved; shown on top of `remote`
+  generation: 0,    // bumps on every save so stale fetches are dropped
+  loading: false,
+  lastFetch: 0,
+  error: null,
+  showDone: false,
+};
+
+function loadConfig() {
+  try { return { ...DEFAULTS, ...JSON.parse(localStorage.getItem(STORAGE_KEY) || '{}') }; }
+  catch (e) { return { ...DEFAULTS }; }
+}
+function saveConfig() {
+  try { localStorage.setItem(STORAGE_KEY, JSON.stringify(cfg)); } catch (e) {}
+}
+
+/* ====================================================================
+   Markdown checklist parsing + edits
+   ==================================================================== */
+const ITEM_RE = /^(\s*)[-*+]\s+\[([ xX])\]\s?(.*)$/;
+const SECTION_RE = /^##\s+(.+?)\s*#*\s*$/;
+
+function parse(md) {
+  const lines = md.replace(/\r\n/g, '\n').split('\n');
+  const items = [], sections = [];
+  let section = null;
+  lines.forEach((line, i) => {
+    const s = line.match(SECTION_RE);
+    if (s) { section = s[1]; sections.push({ name: section, line: i }); return; }
+    const m = line.match(ITEM_RE);
+    if (m) items.push({ line: i, indent: Math.floor(m[1].replace(/\t/g, '  ').length / 2),
+      done: m[2] !== ' ', text: m[3].trim(), section });
+  });
+  return { lines, items, sections };
+}
+
+// Items are identified by text + state + which duplicate they are, so an
+// edit can be re-applied to a newer copy of the file after a conflict.
+function refOf(items, item) {
+  const same = items.filter(it => it.text === item.text && it.done === item.done);
+  return { text: item.text, done: item.done, nth: same.indexOf(item) };
+}
+function findItem(parsed, ref) {
+  const same = parsed.items.filter(it => it.text === ref.text && it.done === ref.done);
+  return same[ref.nth] || same[0] || null;
+}
+
+const ops = {
+  add(text, section) {
+    return { message: `todo: add "${short(text)}"`, apply(md) {
+      const { lines, items, sections } = parse(md);
+      const entry = `- [ ] ${text}`;
+      const inSection = items.filter(it => it.section === section);
+      const heading = sections.find(s => s.name === section);
+      if (inSection.length) {
+        lines.splice(inSection[inSection.length - 1].line + 1, 0, entry);
+      } else if (heading) {
+        lines.splice(heading.line + 1, 0, '', entry);
+      } else {
+        const title = lines.findIndex(l => /^#\s/.test(l));
+        const firstSection = sections.length ? sections[0].line : -1;
+        if (title !== -1 && (firstSection === -1 || title < firstSection)) lines.splice(title + 1, 0, '', entry);
+        else if (firstSection !== -1) lines.splice(firstSection, 0, entry, '');
+        else {
+          while (lines.length && lines[lines.length - 1] === '') lines.pop();
+          lines.push(entry, '');
+        }
+      }
+      return lines.join('\n');
+    }};
+  },
+  toggle(ref) {
+    return { message: `todo: ${ref.done ? 'reopen' : 'done'} "${short(ref.text)}"`, apply(md) {
+      const p = parse(md);
+      const it = findItem(p, ref);
+      if (!it) return null;
+      p.lines[it.line] = p.lines[it.line].replace(/\[[ xX]\]/, ref.done ? '[ ]' : '[x]');
+      return p.lines.join('\n');
+    }};
+  },
+  remove(ref) {
+    return { message: `todo: remove "${short(ref.text)}"`, apply(md) {
+      const p = parse(md);
+      const it = findItem(p, ref);
+      if (!it) return null;
+      p.lines.splice(it.line, 1);
+      return collapseBlankLines(p.lines.join('\n'));
+    }};
+  },
+  clearDone() {
+    return { message: 'todo: clear completed', apply(md) {
+      const p = parse(md);
+      const doneLines = new Set(p.items.filter(it => it.done).map(it => it.line));
+      if (!doneLines.size) return null;
+      return collapseBlankLines(p.lines.filter((_, i) => !doneLines.has(i)).join('\n'));
+    }};
+  },
+};
+
+// Removing tasks can leave empty runs of lines behind; keep at most one blank line.
+function collapseBlankLines(md) {
+  return md.replace(/\n{3,}/g, '\n\n');
+}
+
+function currentMarkdown() {
+  return state.pending.reduce((md, op) => op.apply(md) ?? md, state.remote);
+}
+
+/* ====================================================================
+   GitHub contents API
+   ==================================================================== */
+function contentsUrl() {
+  return `https://api.github.com/repos/${cfg.repo}/contents/${cfg.path.split('/').map(encodeURIComponent).join('/')}`;
+}
+function ghHeaders(extra) {
+  const h = { Accept: 'application/vnd.github+json', ...extra };
+  if (cfg.token) h.Authorization = `Bearer ${cfg.token}`;
+  return h;
+}
+async function ghError(res) {
+  let msg = '';
+  try { msg = (await res.json()).message || ''; } catch (e) {}
+  const err = new Error(msg || `GitHub returned ${res.status}`);
+  err.status = res.status;
+  if (res.status === 401) err.message = 'GitHub rejected the token. It may have expired, so paste a new one in settings (⚙︎).';
+  else if (res.status === 403 && res.headers.get('x-ratelimit-remaining') === '0') err.message = 'GitHub rate limit reached. Connect a token, or try again in a few minutes.';
+  else if (res.status === 403) err.message = 'This token can’t edit the repo. It needs Contents: Read and write on ' + cfg.repo + '.';
+  return err;
+}
+async function fetchRemote() {
+  let res;
+  try {
+    res = await fetch(`${contentsUrl()}?ref=${encodeURIComponent(cfg.branch)}`, { headers: ghHeaders(), cache: 'no-store' });
+  } catch (e) {
+    throw new Error('Couldn’t reach GitHub. Check your connection.');
+  }
+  if (res.status === 404) {
+    if (cfg.token) return { content: '# To-do\n', sha: null }; // first save creates the file
+    throw new Error(`Couldn’t find ${cfg.path} in ${cfg.repo}. If the repo is private, connect a token in settings (⚙︎).`);
+  }
+  if (!res.ok) throw await ghError(res);
+  const json = await res.json();
+  return { content: decodeBase64(json.content || ''), sha: json.sha };
+}
+async function putRemote(content, sha, message) {
+  const body = { message, content: encodeBase64(content), branch: cfg.branch };
+  if (sha) body.sha = sha;
+  let res;
+  try {
+    res = await fetch(contentsUrl(), { method: 'PUT', headers: ghHeaders({ 'Content-Type': 'application/json' }), body: JSON.stringify(body) });
+  } catch (e) {
+    throw new Error('Couldn’t reach GitHub. Your change wasn’t saved.');
+  }
+  if (!res.ok) throw await ghError(res);
+  return (await res.json()).content.sha;
+}
+function decodeBase64(b64) {
+  const bin = atob(b64.replace(/\s/g, ''));
+  return new TextDecoder().decode(Uint8Array.from(bin, c => c.charCodeAt(0)));
+}
+function encodeBase64(str) {
+  const bytes = new TextEncoder().encode(str);
+  let bin = '';
+  for (let i = 0; i < bytes.length; i += 0x8000) bin += String.fromCharCode(...bytes.subarray(i, i + 0x8000));
+  return btoa(bin);
+}
+
+/* ====================================================================
+   Load + save
+   ==================================================================== */
+async function refresh({ quiet = false } = {}) {
+  if (state.pending.length || state.loading) return;
+  state.loading = true;
+  renderStatus();
+  const gen = state.generation;
+  try {
+    const { content, sha } = await fetchRemote();
+    if (gen === state.generation && !state.pending.length) {
+      state.remote = content; state.sha = sha; state.error = null;
+    }
+  } catch (err) {
+    if (state.remote === null) state.error = err.message;
+    else if (!quiet) showToast(err.message);
+  } finally {
+    state.loading = false;
+    state.lastFetch = Date.now();
+    render();
+  }
+}
+
+function enqueue(op) {
+  if (state.remote === null) return;
+  if (!cfg.token) { openSettings(); return; }
+  state.pending.push(op);
+  render();
+  drain();
+}
+
+let draining = false;
+async function drain() {
+  if (draining) return;
+  draining = true;
+  while (state.pending.length) {
+    try { await save(state.pending[0]); }
+    catch (err) { showToast(err.message); }
+    state.pending.shift();
+    render();
+  }
+  draining = false;
+}
+
+// Saves one edit. If the file changed on GitHub since we last read it (a
+// Claude session or another device), re-read it and re-apply the edit.
+async function save(op) {
+  for (let attempt = 0; attempt < 3; attempt++) {
+    const next = op.apply(state.remote);
+    if (next === null || next === state.remote) return;
+    try {
+      state.sha = await putRemote(next, state.sha, op.message);
+      state.remote = next;
+      state.generation++;
+      return;
+    } catch (err) {
+      if (err.status !== 409 && err.status !== 422) throw err;
+      const fresh = await fetchRemote();
+      state.remote = fresh.content; state.sha = fresh.sha;
+      state.generation++;
+    }
+  }
+  throw new Error('The list kept changing while saving. Refresh and try again.');
+}
+
+/* ====================================================================
+   Rendering
+   ==================================================================== */
+const $ = id => document.getElementById(id);
+
+function render() {
+  renderStatus();
+  $('connectBanner').hidden = !!cfg.token || state.remote === null;
+  const list = $('list');
+
+  if (state.remote === null) {
+    if (state.error) {
+      list.replaceChildren(el('div', 'error-box', state.error));
+      $('summary').textContent = 'Couldn’t load the list';
+    }
+    renderSectionPicker([]);
+    return;
+  }
+
+  const md = currentMarkdown();
+  const parsed = parse(md);
+  const unsaved = unsavedLines(parsed);
+  const open = parsed.items.filter(it => !it.done);
+  const done = parsed.items.filter(it => it.done);
+
+  $('summary').textContent = `${open.length} open` + (done.length ? ` · ${done.length} done` : '');
+  renderSectionPicker(parsed.sections);
+
+  const frag = document.createDocumentFragment();
+  if (!open.length) {
+    const empty = el('div', 'empty');
+    empty.append(el('div', 'big', '✓'), el('div', '', parsed.items.length ? 'All done. Nice.' : 'Nothing here yet. Add your first task above.'));
+    frag.append(empty);
+  }
+
+  // Open tasks, grouped by section in file order.
+  const groups = new Map();
+  for (const it of open) {
+    if (!groups.has(it.section)) groups.set(it.section, []);
+    groups.get(it.section).push(it);
+  }
+  for (const [section, items] of groups) {
+    const group = el('section', 'group');
+    if (section !== null) group.append(el('h2', 'group-title', section));
+    const ul = el('ul', 'items');
+    for (const it of items) ul.append(itemRow(it, parsed.items, unsaved));
+    group.append(ul);
+    frag.append(group);
+  }
+
+  if (done.length) {
+    const details = el('details', 'done-group');
+    details.open = state.showDone;
+    details.addEventListener('toggle', () => { state.showDone = details.open; });
+    const summary = el('summary');
+    summary.append(el('span', 'car', '▸'), `Completed (${done.length})`);
+    const ul = el('ul', 'items');
+    for (const it of done) ul.append(itemRow(it, parsed.items, unsaved));
+    details.append(summary, ul);
+    if (cfg.token) {
+      const actions = el('div', 'done-actions');
+      const clear = el('button', 'btn btn-sm', 'Clear completed');
+      clear.type = 'button';
+      clear.onclick = () => enqueue(ops.clearDone());
+      actions.append(clear);
+      details.append(actions);
+    }
+    frag.append(details);
+  }
+
+  list.replaceChildren(frag);
+}
+
+// Lines that differ from what's on GitHub, so unsaved edits can be dimmed.
+function unsavedLines(parsed) {
+  if (!state.pending.length) return new Set();
+  const saved = new Set(parse(state.remote).items.map(it => `${it.done}|${it.text}`));
+  return new Set(parsed.items.filter(it => !saved.has(`${it.done}|${it.text}`)).map(it => it.line));
+}
+
+function itemRow(it, allItems, unsaved) {
+  const ref = refOf(allItems, it);
+  const li = el('li', 'item' + (it.done ? ' done' : '') + (unsaved.has(it.line) ? ' unsaved' : ''));
+  li.style.setProperty('--indent', Math.min(it.indent, 4));
+  const label = el('label');
+  const box = document.createElement('input');
+  box.type = 'checkbox';
+  box.checked = it.done;
+  box.addEventListener('click', e => {
+    e.preventDefault(); // the re-render shows the new state
+    enqueue(ops.toggle(ref));
+  });
+  const text = el('span', 'text');
+  appendLinkified(text, it.text);
+  label.append(box, text);
+  li.append(label);
+  if (cfg.token) {
+    const del = el('button', 'del', '×');
+    del.type = 'button';
+    del.title = 'Delete';
+    del.setAttribute('aria-label', `Delete “${it.text}”`);
+    del.onclick = () => enqueue(ops.remove(ref));
+    li.append(del);
+  }
+  return li;
+}
+
+function renderSectionPicker(sections) {
+  const sel = $('addSection');
+  const prev = sel.value;
+  sel.replaceChildren();
+  sel.hidden = !sections.length;
+  if (!sections.length) return;
+  const top = el('option', '', 'Top');
+  top.value = '';
+  sel.append(top, ...sections.map(s => { const o = el('option', '', s.name); o.value = s.name; return o; }));
+  sel.value = sections.some(s => s.name === prev) ? prev : '';
+}
+
+function renderStatus() {
+  const s = $('syncStatus');
+  $('btnRefresh').classList.toggle('spin', state.loading);
+  if (state.pending.length) { s.textContent = 'Saving…'; s.className = 'sync saving'; }
+  else if (state.error && state.remote === null) { s.textContent = 'Offline'; s.className = 'sync error'; }
+  else if (state.remote !== null && !cfg.token) { s.textContent = 'View only'; s.className = 'sync'; }
+  else if (state.remote !== null) { s.textContent = 'Synced'; s.className = 'sync'; }
+  else { s.textContent = ''; s.className = 'sync'; }
+}
+
+function appendLinkified(node, text) {
+  text.split(/(https?:\/\/[^\s<>]+[^\s<>.,;:!?)\]'"])/g).forEach((part, i) => {
+    if (i % 2) {
+      const a = el('a', '', part.replace(/^https?:\/\//, ''));
+      a.href = part; a.target = '_blank'; a.rel = 'noopener noreferrer';
+      node.append(a);
+    } else if (part) {
+      node.append(part);
+    }
+  });
+}
+
+function el(tag, className, text) {
+  const node = document.createElement(tag);
+  if (className) node.className = className;
+  if (text !== undefined) node.textContent = text;
+  return node;
+}
+function short(s) { return s.length > 50 ? s.slice(0, 49) + '…' : s; }
+
+function showToast(msg) {
+  const t = $('toast');
+  t.textContent = msg;
+  t.classList.add('show');
+  clearTimeout(showToast._t);
+  showToast._t = setTimeout(() => t.classList.remove('show'), 3200);
+}
+
+/* ====================================================================
+   Events
+   ==================================================================== */
+$('addForm').addEventListener('submit', e => {
+  e.preventDefault();
+  const input = $('addText');
+  const text = input.value.replace(/\s+/g, ' ').trim();
+  if (!text) return;
+  if (!cfg.token) { openSettings(); return; }
+  if (state.remote === null) return;
+  enqueue(ops.add(text, $('addSection').value || null));
+  input.value = '';
+  input.focus();
+});
+
+$('btnRefresh').onclick = () => refresh();
+$('btnSettings').onclick = openSettings;
+$('btnConnect').onclick = openSettings;
+
+document.addEventListener('visibilitychange', () => {
+  if (!document.hidden && Date.now() - state.lastFetch > 15000) refresh({ quiet: true });
+});
+
+/* ---------- settings ---------- */
+const dialog = $('settings');
+
+function openSettings() {
+  $('tokenInput').value = cfg.token;
+  $('repoInput').value = cfg.repo;
+  $('branchInput').value = cfg.branch;
+  $('pathInput').value = cfg.path;
+  $('fileLabel').textContent = cfg.path;
+  $('repoNameLabel').textContent = cfg.repo.split('/')[1] || cfg.repo;
+  const owner = cfg.repo.split('/')[0];
+  $('tokenLink').href = 'https://github.com/settings/personal-access-tokens/new?' + new URLSearchParams({
+    name: 'Life Tools to-do', description: `Lets the Life Tools to-do page edit ${cfg.path} in ${cfg.repo}.`,
+    target_name: owner, expires_in: '365', contents: 'write',
+  });
+  setSettingsMsg('');
+  if (typeof dialog.showModal === 'function') dialog.showModal(); else dialog.setAttribute('open', '');
+}
+function closeSettings() {
+  if (typeof dialog.close === 'function') dialog.close(); else dialog.removeAttribute('open');
+}
+function setSettingsMsg(msg, isError) {
+  const m = $('settingsMsg');
+  m.hidden = !msg;
+  m.textContent = msg;
+  m.className = 'dlg-msg' + (isError ? ' error' : '');
+}
+
+$('cancelSettings').onclick = closeSettings;
+dialog.addEventListener('click', e => { if (e.target === dialog) closeSettings(); });
+
+$('forgetToken').onclick = () => {
+  cfg.token = '';
+  saveConfig();
+  closeSettings();
+  showToast('Token removed from this device');
+  render();
+};
+
+$('settingsForm').addEventListener('submit', async e => {
+  e.preventDefault();
+  const next = {
+    token: $('tokenInput').value.trim(),
+    repo: $('repoInput').value.trim().replace(/^https:\/\/github\.com\//, '').replace(/\/+$/, '') || DEFAULTS.repo,
+    branch: $('branchInput').value.trim() || DEFAULTS.branch,
+    path: $('pathInput').value.trim().replace(/^\/+/, '') || DEFAULTS.path,
+  };
+  if (!/^[\w.-]+\/[\w.-]+$/.test(next.repo)) { setSettingsMsg('Repository should look like owner/name.', true); return; }
+
+  // Check the token can at least read the file before keeping it.
+  const prev = cfg;
+  cfg = { ...cfg, ...next };
+  $('saveSettings').disabled = true;
+  setSettingsMsg('Checking…');
+  try {
+    const { content, sha } = await fetchRemote();
+    state.remote = content; state.sha = sha; state.error = null; state.generation++;
+    saveConfig();
+    closeSettings();
+    showToast(cfg.token ? 'Connected. You can edit from this device now.' : 'Saved');
+    render();
+  } catch (err) {
+    cfg = prev;
+    setSettingsMsg(err.message, true);
+  } finally {
+    $('saveSettings').disabled = false;
+  }
+});
+
+render();
+refresh();
+</script>
+</body>
+</html>
