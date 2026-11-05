@@ -1,0 +1,5 @@
+# This repo is public. Never commit bank statements or other personal files.
+*.pdf
+*.PDF
+*.csv
+*.xlsx

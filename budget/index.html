@@ -504,6 +504,13 @@ function buildOwnAccountMatcher(ownAccountNumbers, ownName) {
     // individual purchase transactions on the card statement.
     if (/PAYMENT\s*[-–]\s*THANK\s*YOU/i.test(desc)) return true;
     if (/\b(BPAY|PAYMENT)\s+TO\s+ANZ\s+CARDS?\b/i.test(desc)) return true;
+    // ANZ Plus words a move between the user's own accounts as
+    // "TRANSFER FROM/TO <BSB>-<account>"; money to or from anyone else is
+    // "PAYMENT TO/FROM <name>". Matching the wording catches transfers with a
+    // savings account (e.g. Growth Saver) even when its statement isn't
+    // uploaded -- otherwise only one side is excluded and a large savings
+    // withdrawal shows up as a huge negative expense.
+    if (/^TRANSFER\s+(FROM|TO)\s+\d{6}-\d+/i.test(desc)) return true;
     return false;
   };
 }
@@ -631,6 +638,9 @@ async function processFile(file) {
     if (!sawHeader || !transactions.length) {
       throw new Error("Couldn't find a recognisable transaction table in this PDF.");
     }
+    const dupe = state.statements.find(s => s !== entry && s.meta &&
+      s.meta.accountNumber === meta.accountNumber && s.meta.periodText === meta.periodText);
+    if (dupe) throw new Error(`Same statement as ${dupe.fileName}, so it was skipped to avoid counting it twice.`);
     const yearMatch = (meta.periodText || '').match(/(\d{4})\s*$/);
     const year = yearMatch ? yearMatch[1] : String(new Date().getFullYear());
     entry.meta = meta;
