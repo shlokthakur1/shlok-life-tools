@@ -1,0 +1,515 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<title>Vote · Life Tools</title>
+<link rel="icon" href="../assets/icon.svg" type="image/svg+xml">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Archivo:wght@600;700;800&family=Public+Sans:wght@400;500;600;700&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="../assets/base.css">
+<style>
+  body{ --page-max:1080px;
+    --labor:#C4202F; --coalition:#1F55A5; --onenation:#C65F12; }
+  @media (prefers-color-scheme: dark){
+    :root:not([data-theme="light"]) body{ --labor:#F0727A; --coalition:#7EA8EC; --onenation:#F0A35E; }
+  }
+  .page{ max-width:1080px; margin:0 auto; padding:30px 16px 90px; }
+  .intro{ max-width:720px; }
+  .intro h1{ font-size:clamp(32px, 6vw, 50px); font-weight:800; line-height:1.03; }
+  .intro p{ font-size:16px; line-height:1.55; color:var(--ink-2); margin:14px 0 0; }
+  .dates{ display:flex; flex-wrap:wrap; gap:8px 24px; margin:22px 0 0; padding:0; list-style:none; font-size:14px; color:var(--ink-2); }
+  .dates b{ color:var(--ink); }
+
+  .picker{ position:sticky; top:calc(52px + env(safe-area-inset-top,0px)); z-index:20; background:var(--bg);
+    margin:26px -16px 0; padding:10px 16px; border-bottom:1px solid var(--line); display:flex; gap:6px;
+    overflow-x:auto; scrollbar-width:none; }
+  .picker::-webkit-scrollbar{ display:none; }
+  .picker a{ flex:none; padding:7px 11px; border-radius:7px; font-size:13.5px; font-weight:600; color:var(--ink-2); text-decoration:none; }
+  .picker a:hover{ background:var(--surface); color:var(--ink); }
+  .picker a:focus-visible{ outline:2px solid var(--accent); outline-offset:-2px; }
+  .picker a.on{ background:var(--accent); color:var(--accent-ink); }
+
+  section{ padding-top:44px; scroll-margin-top:96px; }
+  section > h2{ font-size:27px; font-weight:800; line-height:1.15; }
+  .who{ display:inline-block; margin-top:9px; padding:3px 8px; border-radius:5px; font-size:12.5px; font-weight:600; }
+  .who.state{ background:var(--accent-wash); color:var(--accent); }
+  .who.federal{ background:var(--warn-wash); color:var(--warn); }
+  .who.both{ background:var(--surface-2); color:var(--ink-2); border:1px solid var(--line); }
+  .gist{ max-width:720px; font-size:15.5px; line-height:1.55; margin:12px 0 0; }
+
+  .parties{ display:grid; grid-template-columns:repeat(3, minmax(0,1fr)); margin-top:20px; background:var(--surface); border:1px solid var(--line); border-radius:10px; }
+  .party{ padding:16px 18px 18px; min-width:0; }
+  .party + .party{ border-left:1px solid var(--line); }
+  .party h3{ display:flex; align-items:center; gap:8px; font-size:15.5px; font-weight:700; }
+  .party h3::before{ content:""; width:11px; height:11px; border-radius:2px; background:var(--c); flex:none; }
+  .party.labor{ --c:var(--labor); } .party.coalition{ --c:var(--coalition); } .party.onenation{ --c:var(--onenation); }
+  .party ul{ margin:10px 0 0; padding:0; list-style:none; }
+  .party li{ font-size:14px; line-height:1.5; padding:7px 0; color:var(--ink); }
+  .party li + li{ border-top:1px solid var(--line); }
+  .party li.none{ color:var(--ink-muted); }
+  .cite{ font-size:11.5px; color:var(--ink-muted); white-space:nowrap; margin-left:3px; }
+  .cite:hover{ color:var(--accent); }
+
+  .notes{ max-width:720px; margin:16px 0 0; padding:0 0 0 14px; border-left:3px solid var(--line-strong); }
+  .notes h3{ font-size:14px; font-weight:700; }
+  .notes ul{ margin:6px 0 0; padding:0; list-style:none; }
+  .notes li{ font-size:14px; line-height:1.5; padding:3px 0; color:var(--ink-2); }
+
+  .table-wrap{ overflow-x:auto; margin-top:18px; }
+  table.data{ border-collapse:collapse; font-size:14px; min-width:540px; width:100%; max-width:720px; font-variant-numeric:tabular-nums; }
+  table.data th, table.data td{ padding:8px 10px; border-bottom:1px solid var(--line); text-align:right; white-space:nowrap; }
+  table.data th:first-child, table.data td:first-child{ text-align:left; white-space:normal; }
+  table.data thead th{ font-weight:600; color:var(--ink-2); font-size:13px; border-bottom:1px solid var(--line-strong); }
+  table.data td.neg{ color:var(--critical); font-weight:700; }
+  .tablenote{ max-width:720px; font-size:12.5px; line-height:1.5; color:var(--ink-muted); margin:8px 0 0; }
+
+  /* the scorecard is drawn as a ballot paper */
+  .ballot{ margin-top:20px; background:var(--surface); border:2px solid var(--ink); border-radius:3px; }
+  .ballot-row{ display:grid; grid-template-columns:minmax(150px,1.1fr) repeat(3, minmax(0,1fr)); gap:0; border-top:1px solid var(--line); }
+  .ballot-row.head{ border-top:0; font-weight:700; font-size:13.5px; }
+  .ballot-row > div{ padding:10px 12px; min-width:0; }
+  .ballot-issue b{ display:block; font-size:14px; }
+  .weight{ margin-top:6px; font:inherit; font-size:12.5px; color:var(--ink-2); background:var(--surface-2); border:1px solid var(--line-strong); border-radius:5px; padding:3px 4px; max-width:100%; }
+  .boxes{ display:flex; gap:4px; flex-wrap:wrap; border:0; padding:0; margin:0; }
+  .boxes legend{ display:none; }
+  .boxes label{ position:relative; width:30px; height:30px; cursor:pointer; }
+  .boxes input{ position:absolute; inset:0; opacity:0; margin:0; cursor:pointer; }
+  .boxes span{ display:grid; place-items:center; width:100%; height:100%; border:1.5px solid var(--ink-2); font-size:13px; font-weight:600; color:var(--ink-muted); }
+  .boxes input:checked + span{ background:var(--ink); border-color:var(--ink); color:var(--bg); font-weight:800; }
+  .boxes input:focus-visible + span{ outline:2px solid var(--accent); outline-offset:2px; }
+  .boxes label:hover span{ border-color:var(--accent); }
+  .mobile-party{ display:none; font-size:12.5px; font-weight:600; color:var(--ink-2); margin-bottom:4px; }
+  .tally{ display:grid; grid-template-columns:minmax(150px,1.1fr) repeat(3, minmax(0,1fr)); border-top:2px solid var(--ink); background:var(--surface-2); }
+  .tally > div{ padding:12px; }
+  .tally .num{ font-family:"Archivo",sans-serif; font-weight:800; font-size:26px; line-height:1; font-variant-numeric:tabular-nums; }
+  .tally .sub{ font-size:12px; color:var(--ink-muted); margin-top:3px; }
+  .score-actions{ display:flex; justify-content:space-between; gap:12px; align-items:center; flex-wrap:wrap; margin-top:10px; font-size:13px; color:var(--ink-muted); }
+
+  .docs{ margin:18px 0 0; padding:0; list-style:none; max-width:780px; }
+  .docs li{ display:flex; justify-content:space-between; align-items:center; gap:14px; padding:12px 0; border-top:1px solid var(--line); }
+  .docs b{ font-size:14.5px; }
+  .docs p{ margin:2px 0 0; font-size:13px; line-height:1.45; color:var(--ink-2); }
+  .docs .btn{ flex:none; text-decoration:none; }
+  .fine{ max-width:720px; font-size:13.5px; line-height:1.55; color:var(--ink-2); margin:12px 0 0; }
+
+  @media (max-width:780px){
+    .parties{ grid-template-columns:1fr; }
+    .party + .party{ border-left:0; border-top:1px solid var(--line); }
+    .ballot-row, .tally{ grid-template-columns:1fr; }
+    .ballot-row.head{ display:none; }
+    .ballot-row > div{ padding:6px 12px; }
+    .ballot-issue{ padding-top:12px !important; }
+    .ballot-row > div:last-child{ padding-bottom:12px; }
+    .mobile-party{ display:block; }
+    .boxes label{ width:38px; height:38px; }
+    .tally > div{ display:flex; justify-content:space-between; align-items:baseline; padding:8px 12px; gap:10px; }
+    .docs li{ flex-direction:column; align-items:flex-start; }
+  }
+  @media print{ .picker, .lt-nav, .score-actions{ display:none; } }
+</style>
+</head>
+<body data-tool="vote">
+<script src="../assets/nav.js"></script>
+
+<main class="page">
+  <header class="intro">
+    <h1>Victorian election: what each party is offering</h1>
+    <p>Labor, the Liberals and Nationals, and One Nation compared on the issues we care about, with a link behind every claim. Use the ballot at the bottom to rate them yourselves.</p>
+    <ul class="dates">
+      <li><b>Election day:</b> Saturday 28 November (<span id="days"></span>)</li>
+      <li><b>Early voting:</b> 18 to 27 November</li>
+      <li><b>Enrolment:</b> closed 3 November. <a href="https://www.vec.vic.gov.au/enrolment/check-my-enrolment" target="_blank" rel="noopener">Check yours at the VEC</a></li>
+    </ul>
+    <p class="fine">Policies as published up to 6 November 2026. Promises can change before the 28th. Figures in party columns are the party's own unless the source says otherwise.</p>
+  </header>
+
+  <nav class="picker" id="picker" aria-label="Issues"></nav>
+  <div id="issues"></div>
+
+  <section id="ballot">
+    <h2>Rate them yourselves</h2>
+    <p class="gist">Give each party 1 to 5 on each issue, then say how much that issue matters to you. The totals only add up your own ratings, nothing is pre-filled, and your answers stay in this browser.</p>
+    <div class="ballot" id="ballot-paper"></div>
+    <div class="score-actions">
+      <span>Score out of 5, weighted by how much each issue matters to you.</span>
+      <button class="btn btn-sm" id="clear" type="button">Clear my ratings</button>
+    </div>
+  </section>
+
+  <section id="how">
+    <h2>How your vote counts</h2>
+    <p class="gist">You vote for one lower house member and for five upper house members in your region. A party needs 45 of the 88 lower house seats to govern alone. <a href="https://www.parliament.vic.gov.au/election" target="_blank" rel="noopener">Parliament of Victoria</a></p>
+    <p class="fine">Preferences matter this year. The ABC's analysis says One Nation may end up with the balance of power, and that the Coalition could need a formal agreement or bill-by-bill negotiation if it falls short of a majority. Roy Morgan's 26 to 29 October poll had primary votes at Coalition 29.5%, Labor 22.5%, One Nation 22% and Greens 12.5%. <a href="https://www.abc.net.au/news/2026-10-03/victorian-state-election-unpredictable-casey-briggs-analysis/107216078" target="_blank" rel="noopener">ABC</a>, <a href="https://en.wikipedia.org/wiki/Opinion_polling_for_the_2026_Victorian_state_election" target="_blank" rel="noopener">polling list</a>. Greens, independents and minor parties are on the ballot too, but aren't compared here. The <a href="https://www.abc.net.au/news/2026-11-04/victoria-2026-election-policy-promise-tracker/107247200" target="_blank" rel="noopener">ABC tracker</a> covers more parties.</p>
+  </section>
+
+  <section id="docs">
+    <h2>Read the originals</h2>
+    <p class="gist">These open the party's or government's own copy. We could not find a current Labor platform PDF.</p>
+    <ul class="docs" id="doc-list"></ul>
+  </section>
+</main>
+
+<script>
+const S = {
+  abc:['ABC tracker','https://www.abc.net.au/news/2026-11-04/victoria-2026-election-policy-promise-tracker/107247200'],
+  plan:['Coalition plan','https://vicliberal.org.au/Uploads/1784863237800WVVXJGP_our-plan/2026-plan.pdf'],
+  ourplan:['ourplan.au','https://ourplan.au/'],
+  on:['One Nation booklet','https://assets.nationbuilder.com/viconenation/pages/951/attachments/original/1791163766/The_Real_Deal_One_Nation_Vic_Policy_Booklet_Oct2026.pdf'],
+  lab:['Labor plan','https://www.viclabor.org.au/our-plan'],
+  labtax:['Labor','https://www.viclabor.org.au/news/labor-will-cut-land-tax-to-help-with-the-cost-of-living'],
+  labfhb:['Labor','https://www.viclabor.org.au/news/labor-will-build-25-000-homes-for-first-home-buyers'],
+  labfare:['Labor','https://www.viclabor.org.au/news/capping-fares'],
+  labtoll:['Labor','https://www.viclabor.org.au/news/capping-tolls'],
+  budgetcol:['Budget 2026-27','https://www.2026.budget.vic.gov.au/helping-cost-living'],
+  midday:['Premier','https://www.premier.vic.gov.au/best-midday-power-offer-country'],
+  targets:['Vic Gov','https://www.energy.vic.gov.au/renewable-energy/victorian-renewable-energy-and-storage-targets'],
+  store:['Vic Gov','https://www.energy.vic.gov.au/renewable-energy/batteries-energy-storage-projects'],
+  jobs:['Premier','https://www.premier.vic.gov.au/our-18-billion-energy-jobs-guarantee-regional-victoria'],
+  tracker:['Election Tracker','https://electiontracker.au/elections/vic/2026/policies/key-differences'],
+  wakelin:['Wakelin','https://wakelin.com.au/victorias-2026-election-how-each-partys-policies-could-shape-your-property-investments/'],
+  ufin:['UFinancial','https://ufinancial.com.au/victoria-state-election-2026-which-major-partys-housing-policies-are-the-best/'],
+  stpl:['STPL News','https://stplnews.com.au/political-news/victorian-election-2026-party-policies-peninsula/'],
+  pot:['Premier','https://www.premier.vic.gov.au/safer-roads-and-fixing-potholes-our-priority'],
+  bp2:['Budget Paper 2','https://s3.ap-southeast-2.amazonaws.com/vicbudgetfiles2026.27vicbudget/2026-27+State+Budget+-+Strategy+and+Outlook.pdf'],
+  update:['Budget Update','https://www.dtf.vic.gov.au/sites/default/files/2025-12/2025-26-Budget-Update.pdf'],
+  ey:['EY','https://www.ey.com/content/dam/ey-unified-site/ey-com/en-au/insights/economics/documents/ey-states-chart-pack-september-2026.pdf'],
+  upa:['UPA','https://upaustralia.com.au/research/q1-2026-victorian-economic-overview/'],
+  chamber:['Vic Chamber','https://www.victorianchamber.com.au/news/2026-27-state-budget-structural-challenges-weigh-on-victorias-economy'],
+  econ:['ABC economists','https://www.abc.net.au/news/2026-10-19/economists-concerns-liberal-coalition-surplus-plan/107280322'],
+  migabc:['ABC','https://www.abc.net.au/news/2026-10-29/vic-election-racist-rhetoric-one-nation-migration-debate/107313288'],
+  night:['The Nightly','https://thenightly.com.au/australia/coalition-immigration-policy-what-angus-taylors-migration-cuts-mean-for-you-c-22975122'],
+  sbs:['SBS','https://www.sbs.com.au/news/article/migration-policy-labor-coalition-greens-one-nation/7dsd8r7y9'],
+  home:['Home Affairs','https://immi.homeaffairs.gov.au/what-we-do/migration-program-planning-levels'],
+  renew:['RenewEconomy','https://reneweconomy.com.au/victoria-coalition-says-it-may-keep-old-coal-clunkers-running-and-will-scrap-plans-to-move-away-from-gas/amp/'],
+  onenergy:['ABC','https://www.abc.net.au/news/2026-08-31/one-nation-victoria-energy-policy-announcement/107097686'],
+  gasban:['Liberals','https://vicliberal.org.au/media-releases/2026-10-17-lowering-energy-and-housing-costs-by-scrapping-labors-gas-ban'],
+  gassbs:['SBS','https://www.sbs.com.au/news/article/labor-say-no-change-on-gas-taxation/u41vnlg92'],
+  gasbudget:['ABC','https://www.abc.net.au/news/2026-05-10/gas-tax-revenue-up-in-federal-budget/106663036'],
+  gasres:['UTS','https://www.uts.edu.au/news/2026/05/australian-gas-exporters-will-be-forced-to-set-aside-local-supply-for-domestic-users'],
+  tai:['Australia Institute','https://australiainstitute.org.au/post/one-nation-and-greens-voters-strongly-support-25-gas-export-tax-poll/'],
+  senate:['Wikipedia','https://en.wikipedia.org/wiki/Select_Committee_on_the_Taxation_of_Gas_Resources'],
+  air:['Premier','https://www.premier.vic.gov.au/melbourne-airport-rail-stage-2-set-take'],
+  air2:['Australia Today','https://www.theaustraliatoday.com.au/albanese-and-carroll-restart-melbourne-airport-rail-push-as-there-is-still-no-date-for-a-train-to-actually-reach-airport/'],
+  srl:['ABC','https://www.abc.net.au/news/2026-08-25/suburban-rail-loop-project-ben-carroll-savings-2-billion/107073280'],
+  srlpause:['HeadTopics','https://au.headtopics.com/news/wilson-insists-srl-position-is-very-clear-despite-days-of-89392619'],
+  campaign:['ABC','https://www.abc.net.au/news/2026-11-01/victorian-election-labor-liberal-tough-battle/107331376'],
+  greens:['Greens','https://greens.org.au/vic/news/media-release/labors-plan-demolish-public-housing-towers-will-see-just-15-extra-social'],
+  srlwiki:['Wikipedia','https://en.wikipedia.org/wiki/Suburban_Rail_Loop'],
+};
+
+const ISSUES = [
+{ id:'growth', tab:'Economic growth', title:'Which plan gets growth going again?', who:['both','State and federal: states have tax, spending and planning. Rates and migration are federal'],
+  gist:'The feeling matches the numbers on a per-person basis. Victoria\'s own budget has output growing about as fast as the population in 2025-26 and slower than it in 2026-27, so the economy is roughly flat or shrinking per person. We found no independent modelling showing any party\'s plan restores growth, and no 2026 Parliamentary Budget Office costings. The theory and "what has to be true" lines below are our summary, not party wording.',
+  table:true,
+  parties:{
+   labor:[ ['Theory: keep building, ease bills, and hold debt steady as a share of the economy.'],
+           ['Budget forecasts net debt reaching $199.3b by 2029-30 while net debt to GSP eases from 24.9% to 24.4%.','bp2'],
+           ['Savings so far: $2b from the Suburban Rail Loop (half still to be identified), $70m from consultants.','abc'],
+           ['$350m manufacturing jobs package aimed at 5,000 jobs. Mineral royalties go to regional Victoria.','abc'],
+           ['What has to be true: public works and low-cost relief lift private investment, and rising debt stays affordable.'] ],
+   coalition:[ ['Theory: lower tax and tighter spending bring private investment back.'],
+           ['No new or increased taxes, scrap several levies, cash surplus by 2032.','plan'],
+           ['$22b over 10 years from a back-office hiring freeze.','abc'],
+           ['Payroll tax relief for 23,000 businesses and faster housing approvals.','plan'],
+           ['What has to be true: tax cuts and savings add up. RMIT\'s David Hayward finds a $9b hole and Saul Eslake says a surplus can\'t be reached this way. Jess Wilson says the plan is costed and credible.','econ'] ],
+   onenation:[ ['Theory: cut tax and red tape, stop big projects, and make energy cheap.'],
+           ['Cancel the Suburban Rail Loop and redirect the money.','on'],
+           ['Sunset reviews of agencies covering about $35b a year, plus a "two out, one in" red-tape rule.','on'],
+           ['Lift the payroll tax threshold and abolish insurance duty.','on'],
+           ['What has to be true: cancelling the Loop frees more than it costs to stop, and coal and nuclear cut prices. Its booklet promises to publish those stop-or-continue costs but gives no total for its plan.','on'] ]},
+  notes:['These are the sharpest independent criticisms we found, and the one economist piece we read targeted the Coalition. That doesn\'t mean the other plans pass the same test.',
+         'A Victorian election can only move part of this. One property adviser expects interest rates and federal policy to matter more to the housing market than this result.'],
+  noteSources:['econ','wakelin'] },
+
+{ id:'cost', tab:'Cost of living', title:'Cost of living', who:['state','State decides'],
+  gist:'Labor mostly offers capped or rebated bills now. The Coalition and One Nation mostly offer lower state taxes.',
+  parties:{
+   labor:[ ['$30 a week public transport cap for two years from 2027, $15 for concessions. Costs $206m.','labfare'],
+           ['$30 a week toll cap in 2027 on CityLink, EastLink and the West Gate Tunnel. Costs $191m.','labtoll'],
+           ['20% car registration rebate, up to $186 for one vehicle, already funded.','budgetcol'],
+           ['Three free hours of power a day under Midday Power Saver.','midday'],
+           ['Free public dental clinics.','lab'] ],
+   coalition:[ ['Guarantee of no new or increased taxes.','plan'],
+           ['Scrap the emergency services tax, GP tax, schools payroll tax and short-stay tax.','abc'],
+           ['$50 a week toll cap for two years from July 2027, about $90m a year.','abc'],
+           ['No stamp duty for first home buyers up to $1m.','plan'] ],
+   onenation:[ ['Abolish the 10% stamp duty on home, contents and car insurance.','on'],
+           ['Lift the payroll tax threshold so more small employers are exempt.','on'],
+           ['$150 sports voucher per school-age child, part of a $136m families package.','abc'] ]},
+  notes:['The caps run out: Labor\'s toll cap covers 2027 and the fare cap two years. The Coalition\'s toll cap also runs two years. Tax cuts are ongoing but have to be funded every year.'] },
+
+{ id:'investors', tab:'Housing: investors', title:'Housing if you own investment property', who:['state','State decides'],
+  gist:'All three would undo the 2023 land tax threshold cut. The difference is how fast, and what else comes with it.',
+  parties:{
+   labor:[ ['Return the land tax threshold from $50,000 to $300,000 site value by 2033/34, starting 2027/28. Saves up to $975 a year.','labtax'],
+           ['Review the absentee owner surcharge, foreign purchaser duty and other property charges.','tracker'],
+           ['Lower land tax surcharge for global investors who build affordable housing.','wakelin'],
+           ['Off-the-plan stamp duty concession extended to April 2027.','tracker'],
+           ['Keeps the COVID debt surcharge and vacant residential land tax.','ufin'] ],
+   coalition:[ ['Lift the threshold to $300,000 over five years. Claims up to $975 a year back for 280,000 people.','plan'],
+           ['Scrap the short-stay tax.','abc'],
+           ['Scrap the emergency services tax.','plan'],
+           ['Says it would reduce the land tax burden. No other investor-specific measures in its plan.','plan'] ],
+   onenation:[ ['Wind back Labor\'s land tax increases on rentals and small owners, with no timeframe. Says it won\'t scrap land tax overnight.','on'],
+           ['Tax-free room rentals in your own home and fewer limits on granny flats.','tracker'],
+           ['Raise foreign purchaser duty, rate not stated.','on'] ]},
+  notes:['Labor\'s release lists four $25,000 steps and doesn\'t show how the rest of the increase reaches $300,000, so early savings are smaller for many owners. It puts the cost at $230m over five years.',
+         'None of the three has a rental-rules policy in the material we read. Greens policy differs sharply: a two-year rent freeze and 5.3% land tax on residential holdings over $5m.'],
+  noteSources:['labtax','tracker'] },
+
+{ id:'ppr', tab:'Housing: home owners', title:'Housing if you live in the home you own', who:['state','State decides'],
+  gist:'The Coalition has the biggest tax offer for first buyers. Labor is relying on building more homes. One Nation focuses on cutting costs and limiting high-rise.',
+  parties:{
+   labor:[ ['About 25,600 homes reserved for first home buyers at market prices, $499m, first homes in 2027.','labfhb'],
+           ['Current settings stay: no duty for first buyers to $600,000, concession to $750,000, $10,000 grant on eligible new homes.','ufin'],
+           ['Activity Centres: more than 300,000 new homes by 2051.','abc'],
+           ['800,000 new homes target for 2024 to 2034 stays.','wakelin'] ],
+   coalition:[ ['No stamp duty for first home buyers up to $1m, new or established.','wakelin'],
+           ['Scrap the emergency services tax on family homes.','abc'],
+           ['Scrap Activity Centres and restore local planning control.','plan'],
+           ['Expand the Capital City Zone to inner suburbs and clear growth-area plans, which it says could unlock up to 50,000 homes in the regions.','plan'] ],
+   onenation:[ ['Review every fee, tax and charge on new homes, and cut those not justified.','abc'],
+           ['Release under-used government land with legal deadlines for approvals.','on'],
+           ['Community consultation before high-rise in established suburbs.','on'],
+           ['Raise foreign purchaser duty. Federal policy goes further and would ban foreign residential ownership.','tracker'] ]},
+  notes:['ABC reports 26,500 first home buyer homes and Labor\'s release says 25,600. We\'ve used Labor\'s figure.',
+         'Wakelin\'s view is that supply is the main lever, and that duty relief and grants can push prices up.'],
+  noteSources:['abc','wakelin'] },
+
+{ id:'potholes', tab:'Potholes', title:'Potholes and road repair', who:['state','State decides major roads. Councils fix local ones'],
+  gist:'Both major parties have a pothole number. The Coalition has the bigger number and budget over four years. Labor\'s is a one-year target already funded.',
+  parties:{
+   labor:[ ['500,000 potholes by June 2027, double the usual 250,000.','stpl'],
+           ['$352m extra, in about $1.4b of road maintenance in 2026-27.','stpl'],
+           ['Return road maintenance to government control.','lab'],
+           ['Partly funded by delaying three level crossing projects by a year.','pot'] ],
+   coalition:[ ['$5b over four years to repair and rebuild roads, a target of one million potholes.','stpl'],
+           ['New repair body, Better Roads Victoria.','plan'],
+           ['$288m for 48 regional councils\' local roads and bridges.','abc'] ],
+   onenation:[ ['Public Pothole Portal with a live map and repair times.','on'],
+           ['Publish the condition and funding of every major regional road.','on'],
+           ['Locked-in funding to clear the regional backlog, amount not stated.','on'] ]},
+  notes:['Compare the yearly rate, not the headline: 500,000 in one year against one million with $5b over four years.'] },
+
+{ id:'immigration', tab:'Immigration', title:'Immigration', who:['federal','Federal decides. The state can\'t set migration'],
+  gist:'These are national positions, because your state vote doesn\'t set the intake. It may still signal what you want. All three parties back lower numbers.',
+  parties:{
+   labor:[ ['Federal Labor: net overseas migration of 245,000 in 2026-27, then 225,000.','night'],
+           ['185,000 permanent places in 2026-27, about 71% skilled.','home'],
+           ['No separate Victorian migration policy.','migabc'] ],
+   coalition:[ ['Federal Coalition: 100,000 a year for two years, then 130,000 and 160,000.','night'],
+           ['Cap new international student starts at 240,000 and halve the humanitarian intake to 10,000.','night'],
+           ['Later link migration to new homes completed.','night'],
+           ['Not mentioned in its Victorian plan.','plan'] ],
+   onenation:[ ['Federal One Nation: net-negative migration for three years, then a 130,000 ceiling.','night'],
+           ['Deport 75,000 people it says are unlawful, an eight-year wait for citizenship and welfare, and leave the Refugee Convention.','sbs'],
+           ['State measure: refer non-citizens convicted of violent offences for visa cancellation.','on'] ]},
+  notes:['Net overseas migration was 292,100 in the year to March. Victoria\'s population growth is third-fastest nationally, driven by overseas migration, which is easing.'],
+  noteSources:['night','ey'] },
+
+{ id:'social', tab:'Social housing', title:'Social housing', who:['both','State builds and runs it, with federal money'],
+  gist:'Labor is the only one of the three with a build number and funding. The Coalition and One Nation mainly rely on private and community providers.',
+  parties:{
+   labor:[ ['$860m Social Housing Growth Fund over five years, for 7,000+ extra homes over a decade.','tracker'],
+           ['$86m of that for First Nations housing.','abc'],
+           ['Redevelop 44 ageing public towers with at least 10% more social homes on those sites.','ufin'],
+           ['Big Housing Build: more than 12,000 of over 16,000 homes complete or underway.','ufin'] ],
+   coalition:[ ['Not addressed in its 40-page plan.','plan'],
+           ['Focus is on private building, land release and approvals.','ufin'] ],
+   onenation:[ ['Incentives for private and community groups to deliver low-cost housing.','on'],
+           ['Free up under-used government land.','abc'],
+           ['No funding or build target.','on'] ]},
+  notes:['The tower redevelopment is contested. The Greens say it will add few homes each year and want demolition stopped.'],
+  noteSources:['ufin','greens'] },
+
+{ id:'energy', tab:'Energy', title:'Energy and renewables', who:['both','Both: the state sets targets, gas rules and approvals. The national market sets prices'],
+  gist:'This is the widest gap of any issue. Labor keeps legislated renewable targets, the Coalition backs gas and pauses major transmission, and One Nation would scrap net zero and open the door to nuclear.',
+  parties:{
+   labor:[ ['Renewables: 65% by 2030, 95% by 2035. Offshore wind: 2GW by 2032, 4GW by 2035, 9GW by 2040.','targets'],
+           ['Storage: 2.6GW by 2030 and 6.3GW by 2035, backed by gas peakers.','store'],
+           ['Keeps the Gas Substitution Roadmap, but approved a large offshore Otway gas project.','renew'],
+           ['No plan to shut coal early. SEC jobs program continues.','jobs'],
+           ['Midday Power Saver: three free hours a day for about 2.6m households.','midday'] ],
+   coalition:[ ['Scrap the ban on new gas connections within 100 days.','gasban'],
+           ['Open conventional gas exploration and extraction.','plan'],
+           ['Halt VNI West and the Western Renewables Link during a review, and bring back 2km wind turbine buffers.','plan'],
+           ['Energy Security Requirement, tendering for firm power. Urban solar parks.','plan'],
+           ['No new coal, but won\'t rule out extending plants. Its plan doesn\'t say whether renewables targets stay.','renew'] ],
+   onenation:[ ['Scrap net-zero targets and renewable subsidies. Scrap renewable energy zones, including offshore wind.','onenergy'],
+           ['Keep Loy Yang A beyond its 2035 closure date.','onenergy'],
+           ['Repeal the 1983 nuclear ban.','on'],
+           ['Cancel VNI West and the Western Renewables Link.','on'],
+           ['Ban big solar, wind and battery projects on prime farmland and other restricted land.','on'] ]},
+  notes:['Labor\'s 2GW offshore wind target looks increasingly unlikely to be met, according to RenewEconomy.',
+         'On One Nation\'s plan, Grattan\'s Tony Wood says old coal gets less reliable and nuclear would take a long time. One Nation gave no costs and hadn\'t spoken to AGL, which repeated its 2035 closure date.',
+         'The Coalition says transmission lines could add $600 a year to bills, citing a think tank. Its gas-ban costs of up to $15,000 per new build are also its own figures.'],
+  noteSources:['renew','onenergy','gasban'] },
+
+{ id:'gas', tab:'Gas export tax', title:'Gas export tax', who:['federal','Federal decides. No Victorian party can legislate it'],
+  gist:'None of the three has a gas export tax in its Victorian platform. The live debate is in Canberra. The state-level choice is about where Victorian gas goes and whether to look for more.',
+  parties:{
+   labor:[ ['Federal Labor has ruled out a 25% export tax, pointing to about $22b it says gas companies pay.','gassbs'],
+           ['Instead: producers reserve 20% of east coast LNG exports for domestic use from July 2027. Older contracts are exempt.','gasres'],
+           ['No state gas export policy found.','tracker'] ],
+   coalition:[ ['Federal Coalition rejects the 25% tax and wants more gas reserves opened.','gassbs'],
+           ['Victorian plan doesn\'t mention an export tax or reservation.','plan'],
+           ['Victorian focus: invite producers to bring conventional onshore gas to market.','gasban'] ],
+   onenation:[ ['Victorian booklet has no export tax. Victorian homes and industry get "first call", and surplus can still be exported.','on'],
+           ['Victorian users shouldn\'t pay more than the export price.','on'],
+           ['Pauline Hanson has floated a government stake in gas projects with a sovereign fund.','gasbudget'] ]},
+  notes:['Case for: the Australia Institute, which advocates for the tax, estimates $17b a year. Former Treasury secretary Ken Henry and David Pocock back it. The petroleum resource rent tax raised $1.42b in 2024-25.',
+         'Case against: Woodside, Chevron, Santos and INPEX say new taxes could cost jobs. Anthony Albanese cites overseas investment and trading partners who rely on Australian supply.',
+         'A cross-party Senate committee urged the government to revisit the issue after the Middle East conflict ends.'],
+  noteSources:['tai','senate','gassbs','gasbudget'] },
+
+{ id:'rail', tab:'Rail and Airport', title:'Rail, the Airport link and the Loop', who:['both','State builds, with federal money'],
+  gist:'Nobody has a committed date for a train to the airport itself. Labor has money and two stages under way, One Nation promises completion, and we found no Coalition position.',
+  parties:{
+   labor:[ ['Airport Rail: $12b with the federal government. Stage 1 at Sunshine, $4.1b, done by 2030.','air'],
+           ['Stage 2: Albion to Keilor East, major works 2028 to 2031.','air'],
+           ['Stage 3 into the airport has no date. The steering committee is still working through options.','air'],
+           ['Keep the Suburban Rail Loop: about $33.3b after cuts, over $14b in contracts signed, SRL East opening 2035.','srl'],
+           ['No new Loop contracts until an independent review reports.','srl'] ],
+   coalition:[ ['Airport Rail isn\'t mentioned in its plan, and we found no current position.','plan'],
+           ['Pause and review the Loop within 100 days. Existing contracts continue, but no new ones.','srlpause'],
+           ['Its messaging has shifted on whether work stops, and Labor says a pause costs at least $1b.','campaign'],
+           ['Has matched Labor\'s road projects, including a Western Highway upgrade.','campaign'] ],
+   onenation:[ ['"Complete the Airport Rail Link", with no date or funding.','on'],
+           ['Cancel the Suburban Rail Loop.','on'],
+           ['Electrify the Melton line and finish regional track duplication.','on'],
+           ['Support the full Inland Rail project.','on'] ]},
+  notes:['The 2022 business case claimed $2.10 of benefit per dollar for Airport Rail. The opening target moved from 2029 to at least 2033, and even 2033 is no longer publicly committed.',
+         'For the Loop, the Parliamentary Budget Office put the benefit-cost ratio at 0.6 to 0.7 in 2022 and Infrastructure Australia found costs outweigh benefits in 2025. Victoria rejected those findings. Federal funding for it rose in the 2026 budget.'],
+  noteSources:['air2','srlwiki'] },
+];
+
+const PARTIES = [['labor','Labor'],['coalition','Liberal and Nationals'],['onenation','One Nation']];
+const DOCS = [
+ ['One Nation: The Real Deal for Victoria','64-page policy booklet, October 2026.',S.on[1],'Open PDF'],
+ ['Liberals and Nationals: Our Plan to Deliver for Victorians','40-page election plan.',S.plan[1],'Open PDF'],
+ ['Liberals and Nationals: Economic plan','Ten-year economic policy document. We could not open this one to check it, so it may need a browser.','https://vicliberal.org.au/Uploads/37417316674975808NRT_vicliberal/2026-Policy-Economic-Future.pdf','Open PDF'],
+ ['Labor: Our Plan','The current plan is a web page, not a PDF. A 133-page 2026-2030 platform was reported as published, then removed.',S.lab[1],'Open page'],
+ ['Labor: Platform 2022-2026','The latest Labor platform PDF we could find. It is out of date, so read it for background only.','https://viclabor.com.au/download/platform/','Open PDF'],
+ ['Victorian Budget 2026-27: Strategy and Outlook','The government\'s forecasts for growth, jobs and debt.',S.bp2[1],'Open PDF'],
+];
+
+function el(tag, cls, text){ const n=document.createElement(tag); if(cls) n.className=cls; if(text!=null) n.textContent=text; return n; }
+function cite(key){ const s=S[key]; const a=el('a','cite',s[0]); a.href=s[1]; a.target='_blank'; a.rel='noopener'; return a; }
+
+// countdown
+const dayMs=864e5; const left=Math.ceil((new Date('2026-11-28T08:00:00+11:00')-Date.now())/dayMs);
+document.getElementById('days').textContent = left>1 ? left+' days away' : left===1 ? 'tomorrow' : left===0 ? 'today' : 'has passed';
+
+const root=document.getElementById('issues'), picker=document.getElementById('picker');
+const links={};
+function addLink(id,label){ const a=el('a',null,label); a.href='#'+id; picker.append(a); links[id]=a; }
+
+function growthTable(){
+  const wrap=el('div'); const tw=el('div','table-wrap'); const t=el('table','data');
+  t.innerHTML=`<caption style="position:absolute;left:-9999px">Victorian budget forecasts</caption><thead><tr><th>Victoria</th><th>2024-25</th><th>2025-26</th><th>2026-27</th><th>2027-28</th><th>2029-30</th></tr></thead>
+  <tbody>
+   <tr><td>Real economic growth (GSP)</td><td>1.1%</td><td>1.75%</td><td>1.5%</td><td>2.0%</td><td>2.5%</td></tr>
+   <tr><td>Population growth</td><td>1.8%</td><td>1.7%</td><td>1.7%</td><td>1.7%</td><td>1.7%</td></tr>
+   <tr><td>Growth per person, approximate</td><td class="neg">-0.7%</td><td>0.05%</td><td class="neg">-0.2%</td><td>0.3%</td><td>0.8%</td></tr>
+   <tr><td>Unemployment</td><td>4.4%</td><td>4.75%</td><td>4.75%</td><td>4.75%</td><td>4.75%</td></tr>
+   <tr><td>Net debt</td><td>$150.9b</td><td>$165.3b</td><td>$175.6b</td><td>$183.2b</td><td>$199.3b</td></tr>
+  </tbody>`;
+  tw.append(t);
+  const n=el('p','tablenote','2024-25 is actual, later years are forecasts or projections. Growth per person is our subtraction, not a published figure. ');
+  n.append(cite('bp2'));
+  const m=el('p','tablenote','In December the forecast for 2026-27 growth was 2.5%, and by May it was 1.5%. Interest was forecast at about $8.5b in 2026-27 and $10.5b by 2028-29. EY had Victoria\'s demand growth weakest of all states in the June quarter, with the most unemployed people per job vacancy. For balance, the December update put output per person 4.1% above 2018-19, and the budget shows small operating surpluses. ');
+  m.append(cite('update'),cite('ey'),cite('chamber'));
+  wrap.append(tw,n,m); return wrap;
+}
+
+for(const i of ISSUES){
+  addLink(i.id,i.tab);
+  const sec=el('section'); sec.id=i.id;
+  sec.append(el('h2',null,i.title), el('span','who '+i.who[0],i.who[1]), el('p','gist',i.gist));
+  if(i.table) sec.append(growthTable());
+  const grid=el('div','parties');
+  for(const [k,name] of PARTIES){
+    const col=el('div','party '+k); col.append(el('h3',null,name));
+    const ul=el('ul');
+    for(const [t,src] of i.parties[k]){ const li=el('li',null,t+' '); if(src) li.append(cite(src)); ul.append(li); }
+    col.append(ul); grid.append(col);
+  }
+  sec.append(grid);
+  if(i.notes){
+    const n=el('div','notes'); n.append(el('h3',null,'Worth knowing'));
+    const ul=el('ul'); i.notes.forEach(t=>ul.append(el('li',null,t))); n.append(ul);
+    if(i.noteSources){ const p=el('li'); i.noteSources.forEach(k=>p.append(cite(k))); ul.append(p); }
+    sec.append(n);
+  }
+  root.append(sec);
+}
+addLink('ballot','Rate them'); addLink('docs','Read the originals');
+
+// picker highlight
+if('IntersectionObserver' in window){
+  const io=new IntersectionObserver(es=>{ es.forEach(e=>{ if(e.isIntersecting){
+    Object.values(links).forEach(a=>{ a.classList.remove('on'); a.removeAttribute('aria-current'); });
+    const a=links[e.target.id]; if(a){ a.classList.add('on'); a.setAttribute('aria-current','true');
+      picker.scrollTo({left:a.offsetLeft-picker.offsetLeft-16,behavior:'smooth'}); } } }); },{rootMargin:'-20% 0px -70% 0px'});
+  document.querySelectorAll('section[id]').forEach(s=>io.observe(s));
+}
+
+// ballot
+const KEY='vote-ballot-2026'; let state={};
+try{ state=JSON.parse(localStorage.getItem(KEY)||'{}')||{}; }catch(e){ state={}; }
+function save(){ try{ localStorage.setItem(KEY,JSON.stringify(state)); }catch(e){} }
+const paper=document.getElementById('ballot-paper');
+const WEIGHTS=[[1,'Matters a little'],[2,'Matters'],[3,'Matters a lot'],[0,'Ignore this issue']];
+const head=el('div','ballot-row head'); head.append(el('div',null,'Issue')); PARTIES.forEach(p=>head.append(el('div',null,p[1]))); paper.append(head);
+for(const i of ISSUES){
+  const row=el('div','ballot-row'); const c=el('div','ballot-issue'); c.append(el('b',null,i.tab));
+  const sel=el('select','weight'); sel.setAttribute('aria-label','How much '+i.tab+' matters');
+  WEIGHTS.forEach(([v,l])=>{ const o=el('option',null,l); o.value=v; sel.append(o); });
+  sel.value=(state[i.id]&&state[i.id].w!=null)?state[i.id].w:2; sel.dataset.id=i.id;
+  sel.addEventListener('change',()=>{ (state[i.id]=state[i.id]||{}).w=+sel.value; save(); tally(); });
+  c.append(sel); row.append(c);
+  for(const [k,name] of PARTIES){
+    const cell=el('div'); cell.append(el('div','mobile-party',name));
+    const fs=el('fieldset','boxes'); fs.append(el('legend',null,name+' on '+i.tab));
+    for(let n=1;n<=5;n++){
+      const lab=el('label'); const inp=el('input'); inp.type='radio'; inp.name=i.id+'-'+k; inp.value=n;
+      inp.setAttribute('aria-label',name+' on '+i.tab+': '+n+' out of 5');
+      if(state[i.id]&&state[i.id][k]===n) inp.checked=true;
+      inp.addEventListener('change',()=>{ (state[i.id]=state[i.id]||{})[k]=n; save(); tally(); });
+      lab.append(inp,el('span',null,String(n))); fs.append(lab);
+    }
+    cell.append(fs); row.append(cell);
+  }
+  paper.append(row);
+}
+const t=el('div','tally'); t.append(el('div',null)); t.firstChild.innerHTML='<b>Your total</b>';
+const out={}; for(const [k,name] of PARTIES){ const d=el('div'); const lab=el('div','mobile-party',name); const v=el('div'); const num=el('div','num','–'); const sub=el('div','sub','Nothing rated yet'); v.append(num,sub); d.append(lab,v); t.append(d); out[k]=[num,sub]; }
+paper.append(t);
+function tally(){
+  for(const [k] of PARTIES){
+    let sum=0,w=0,n=0;
+    for(const i of ISSUES){ const s=state[i.id]||{}; const wt=s.w!=null?s.w:2; if(s[k]&&wt>0){ sum+=s[k]*wt; w+=wt; n++; } }
+    out[k][0].textContent=w?(sum/w).toFixed(1):'–';
+    out[k][1].textContent=n?n+' of '+ISSUES.length+' issues rated':'Nothing rated yet';
+  }
+}
+tally();
+document.getElementById('clear').addEventListener('click',()=>{
+  state={}; save();
+  paper.querySelectorAll('input').forEach(x=>x.checked=false);
+  paper.querySelectorAll('select').forEach(x=>x.value=2);
+  tally();
+});
+
+// documents
+const dl=document.getElementById('doc-list');
+for(const [title,desc,url,label] of DOCS){
+  const li=el('li'); const b=el('div'); b.append(el('b',null,title),el('p',null,desc));
+  const a=el('a','btn btn-sm',label); a.href=url; a.target='_blank'; a.rel='noopener';
+  li.append(b,a); dl.append(li);
+}
+</script>
+</body>
+</html>

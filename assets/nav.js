@@ -6,6 +6,8 @@ window.LIFE_TOOLS = [
     description: 'Tasks kept in this repo. Tick them off here, or ask Claude to add them.' },
   { id: 'budget', label: 'Budget', path: 'budget/', mark: '$',
     description: 'Drop in ANZ statement PDFs and get monthly budget categories. Runs entirely in your browser.' },
+  { id: 'vote', label: 'Vote', path: 'vote/', mark: '☑',
+    description: 'Labor, Liberal and One Nation compared for the Victorian election, with sources and a ballot to rate them.' },
 ];
 
 (function () {

@@ -6,6 +6,7 @@ Small personal tools, live at **https://shlokthakur1.github.io/shlok-life-tools/
 | --- | --- |
 | [To-do](https://shlokthakur1.github.io/shlok-life-tools/todo/) | A checklist kept in [`data/todo.md`](data/todo.md). Edit it on the site, or ask Claude to change it. |
 | [Budget](https://shlokthakur1.github.io/shlok-life-tools/budget/) | Statement Ledger: turns ANZ statement PDFs into monthly budget categories, entirely in the browser. |
+| [Vote](https://shlokthakur1.github.io/shlok-life-tools/vote/) | Victorian election 2026: party policies compared by issue, with sources, links to the originals and a private rating ballot. |
 
 ## To-do sync
 
