@@ -8,6 +8,8 @@ window.LIFE_TOOLS = [
     description: 'Drop in ANZ statement PDFs and get monthly budget categories. Runs entirely in your browser.' },
   { id: 'vote', label: 'Vote', path: 'vote/', mark: '☑',
     description: 'Labor, Liberal and One Nation compared for the Victorian election, with sources and a ballot to rate them.' },
+  { id: 'networth', label: 'Net Value', path: 'networth/', mark: '◆',
+    description: 'Shares, properties, loans and your ownership share, added up. Saved only in your browser.' },
 ];
 
 (function () {

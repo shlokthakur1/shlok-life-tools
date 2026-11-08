@@ -1,0 +1,292 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<title>Net Value · Life Tools</title>
+<link rel="icon" href="../assets/icon.svg" type="image/svg+xml">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Archivo:wght@600;700;800&family=Public+Sans:wght@400;500;600;700&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="../assets/base.css">
+<style>
+  body{ --page-max:860px; }
+  .wrap{ max-width:860px; margin:0 auto; padding:28px 16px 80px; }
+  .num{ font-variant-numeric:tabular-nums; }
+  .head{ display:flex; justify-content:space-between; align-items:flex-end; gap:12px; flex-wrap:wrap; margin-bottom:18px; }
+  .head h1{ font-size:24px; font-weight:800; }
+  .head p{ margin:4px 0 0; color:var(--ink-muted); font-size:13px; }
+  .actions{ display:flex; gap:6px; flex-wrap:wrap; }
+
+  .card{ background:var(--surface); border:1px solid var(--line); border-radius:14px; box-shadow:var(--shadow); }
+
+  .hero{ padding:20px 20px 18px; margin-bottom:14px; }
+  .hero .label{ font-size:12px; color:var(--ink-muted); font-weight:700; text-transform:uppercase; letter-spacing:.04em; }
+  .hero .big{ font-family:"Archivo",sans-serif; font-size:38px; font-weight:800; margin-top:4px; letter-spacing:-0.02em; }
+  .split{ display:grid; grid-template-columns:repeat(3,1fr); gap:10px; margin-top:16px; }
+  .split div{ background:var(--surface-2); border-radius:10px; padding:10px 12px; }
+  .split span{ display:block; font-size:11.5px; color:var(--ink-muted); font-weight:600; }
+  .split b{ display:block; font-size:16px; margin-top:2px; }
+  .bar{ display:flex; height:8px; border-radius:99px; overflow:hidden; margin-top:16px; background:var(--surface-2); }
+  .bar i{ display:block; height:100%; }
+  .legend{ display:flex; gap:14px; margin-top:8px; font-size:12px; color:var(--ink-2); flex-wrap:wrap; }
+  .legend em{ display:inline-block; width:9px; height:9px; border-radius:3px; margin-right:5px; vertical-align:-1px; }
+
+  h2{ font-size:16px; margin:26px 0 10px; display:flex; justify-content:space-between; align-items:center; gap:10px; }
+
+  .field{ display:flex; flex-direction:column; gap:4px; font-size:11.5px; font-weight:600; color:var(--ink-muted); min-width:0; }
+  .field input{ font:inherit; font-size:15px; font-weight:600; color:var(--ink); background:var(--surface-2);
+    border:1px solid var(--line); border-radius:8px; padding:8px 10px; width:100%; min-width:0; }
+  .field input:focus{ outline:2px solid var(--accent); outline-offset:0; border-color:var(--accent); background:var(--surface); }
+  .money{ position:relative; }
+  .money::before{ content:"$"; position:absolute; left:10px; top:50%; transform:translateY(-50%); color:var(--ink-muted); font-weight:600; font-size:15px; }
+  .money input{ padding-left:22px; }
+  .pct{ position:relative; }
+  .pct::after{ content:"%"; position:absolute; right:10px; top:50%; transform:translateY(-50%); color:var(--ink-muted); font-weight:600; font-size:15px; }
+  .pct input{ padding-right:26px; }
+
+  .stocks{ padding:16px; display:flex; gap:12px; align-items:flex-end; }
+  .stocks .field{ flex:1; max-width:260px; }
+
+  .props{ display:grid; gap:12px; }
+  .prop{ padding:14px 16px 12px; }
+  .prop-top{ display:flex; gap:10px; align-items:flex-end; }
+  .prop-top .field{ flex:1; }
+  .prop-top .field input{ font-family:"Archivo",sans-serif; font-weight:700; }
+  .grid3{ display:grid; grid-template-columns:1fr 1fr 110px; gap:10px; margin-top:10px; }
+  .prop-foot{ display:flex; justify-content:space-between; gap:10px; flex-wrap:wrap; margin-top:12px; padding-top:10px;
+    border-top:1px solid var(--line); font-size:13px; color:var(--ink-2); }
+  .prop-foot b{ color:var(--ink); }
+  .prop-foot .mine b{ color:var(--accent); }
+  .lvr{ font-size:12px; color:var(--ink-muted); }
+  .del{ color:var(--ink-muted); }
+  .del:hover{ color:var(--critical); background:var(--critical-wash); border-color:transparent; }
+  .neg{ color:var(--critical) !important; }
+
+  .empty{ padding:22px; text-align:center; color:var(--ink-2); }
+  .empty p{ margin:0 0 12px; }
+  .note{ margin-top:22px; font-size:12px; color:var(--ink-muted); display:flex; gap:7px; align-items:flex-start; line-height:1.5; }
+  .note svg{ flex:none; margin-top:2px; }
+  input[type=file]{ display:none; }
+
+  @media (max-width:560px){
+    .hero .big{ font-size:32px; }
+    .split{ grid-template-columns:1fr; }
+    .grid3{ grid-template-columns:1fr 1fr; }
+    .grid3 .pct-wrap{ grid-column:1 / -1; }
+  }
+</style>
+</head>
+<body data-tool="networth">
+<script src="../assets/nav.js"></script>
+
+<main class="wrap">
+  <div class="head">
+    <div>
+      <h1>Net Value</h1>
+      <p id="updated">Your assets, loans and your share of each.</p>
+    </div>
+    <div class="actions">
+      <button class="btn btn-sm" type="button" id="restoreBtn">Restore backup</button>
+      <button class="btn btn-sm" type="button" id="backupBtn">Download backup</button>
+      <input type="file" id="restoreFile" accept="application/json,.json">
+    </div>
+  </div>
+
+  <section class="card hero">
+    <div class="label">Net value · my share</div>
+    <div class="big num" id="total">$0</div>
+    <div class="split">
+      <div><span>Shares &amp; ETFs</span><b class="num" id="sStocks">$0</b></div>
+      <div><span>Property equity</span><b class="num" id="sEquity">$0</b></div>
+      <div><span>Loans (my share)</span><b class="num" id="sLoans">$0</b></div>
+    </div>
+    <div class="bar" id="bar"></div>
+    <div class="legend" id="legend"></div>
+  </section>
+
+  <h2>Shares &amp; ETFs</h2>
+  <section class="card stocks">
+    <label class="field">Current value
+      <span class="money"><input id="stocks" inputmode="decimal" autocomplete="off"></span>
+    </label>
+  </section>
+
+  <h2>Properties <button class="btn btn-sm btn-primary" type="button" id="addProp">+ Add property</button></h2>
+  <div class="props" id="props"></div>
+
+  <p class="note">
+    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><rect x="4" y="11" width="16" height="10" rx="2"/><path d="M8 11V7a4 4 0 0 1 8 0v4"/></svg>
+    Saved only in this browser on this device — nothing is sent to GitHub, because the site is public. Download a backup to move it to another device, then use Restore there.
+  </p>
+</main>
+
+<div class="toast" id="toast"></div>
+
+<script>
+const KEY = 'lt-networth-v1';
+const $ = id => document.getElementById(id);
+const aud = new Intl.NumberFormat('en-AU', { style:'currency', currency:'AUD', maximumFractionDigits:0 });
+const money = n => aud.format(Math.round(n || 0));
+const uid = () => Math.random().toString(36).slice(2, 9);
+
+let state = load();
+
+function load(){
+  try {
+    const s = JSON.parse(localStorage.getItem(KEY) || 'null');
+    if (s && Array.isArray(s.properties)) return s;
+  } catch (e) {}
+  return { stocks: 0, properties: [], updated: null };
+}
+function save(){
+  state.updated = new Date().toISOString();
+  try { localStorage.setItem(KEY, JSON.stringify(state)); } catch (e) { toast('Couldn’t save in this browser'); }
+  renderUpdated();
+}
+function parse(v){
+  const n = parseFloat(String(v).replace(/[^0-9.\-]/g, ''));
+  return isFinite(n) ? n : 0;
+}
+function fmtInput(n){ if (!n) return ''; const c = Number.isInteger(n) ? 0 : 2; return Number(n).toLocaleString('en-AU', { minimumFractionDigits:c, maximumFractionDigits:2 }); }
+
+function calc(){
+  let equity = 0, loans = 0, gross = 0;
+  for (const p of state.properties){
+    const s = (p.share ?? 100) / 100;
+    equity += (p.value - p.loan) * s;
+    loans += p.loan * s;
+    gross += p.value * s;
+  }
+  return { equity, loans, gross, total: state.stocks + equity };
+}
+
+function renderSummary(){
+  const c = calc();
+  $('total').textContent = money(c.total);
+  $('total').classList.toggle('neg', c.total < 0);
+  $('sStocks').textContent = money(state.stocks);
+  $('sEquity').textContent = money(c.equity);
+  $('sLoans').textContent = money(c.loans);
+  const parts = [
+    { label:'Shares & ETFs', v: Math.max(state.stocks, 0), color:'var(--warn)' },
+    { label:'Property equity', v: Math.max(c.equity, 0), color:'var(--accent)' },
+  ];
+  const sum = parts.reduce((a, p) => a + p.v, 0) || 1;
+  $('bar').innerHTML = parts.map(p => `<i style="width:${p.v / sum * 100}%;background:${p.color}"></i>`).join('');
+  $('legend').innerHTML = parts.map(p => `<span><em style="background:${p.color}"></em>${p.label} ${Math.round(p.v / sum * 100)}%</span>`).join('');
+}
+
+function renderUpdated(){
+  $('updated').textContent = state.updated
+    ? 'Last edited ' + new Date(state.updated).toLocaleDateString('en-AU', { day:'numeric', month:'short', year:'numeric' })
+    : 'Your assets, loans and your share of each.';
+}
+
+function propFoot(p){
+  const s = (p.share ?? 100) / 100;
+  const eq = p.value - p.loan;
+  const lvr = p.value ? Math.round(p.loan / p.value * 100) : 0;
+  return `<span>Equity <b class="num">${money(eq)}</b> <span class="lvr">· LVR ${lvr}%</span></span>
+          <span class="mine">My share <b class="num ${eq * s < 0 ? 'neg' : ''}">${money(eq * s)}</b></span>`;
+}
+
+function renderProps(){
+  const box = $('props');
+  box.innerHTML = '';
+  if (!state.properties.length){
+    box.innerHTML = `<div class="card empty"><p>No properties yet. Add one, or restore a backup file.</p></div>`;
+    return;
+  }
+  state.properties.forEach((p, i) => {
+    const el = document.createElement('section');
+    el.className = 'card prop';
+    el.dataset.id = p.id;
+    el.innerHTML = `
+      <div class="prop-top">
+        <label class="field">Property ${i + 1}<input data-k="name" autocomplete="off" placeholder="Address"></label>
+        <button class="btn btn-sm btn-ghost del" type="button" aria-label="Remove property">Remove</button>
+      </div>
+      <div class="grid3">
+        <label class="field">Current value<span class="money"><input data-k="value" inputmode="decimal" autocomplete="off"></span></label>
+        <label class="field">Loan balance<span class="money"><input data-k="loan" inputmode="decimal" autocomplete="off"></span></label>
+        <label class="field pct-wrap">My share<span class="pct"><input data-k="share" inputmode="decimal" autocomplete="off"></span></label>
+      </div>
+      <div class="prop-foot">${propFoot(p)}</div>`;
+    el.querySelector('[data-k=name]').value = p.name || '';
+    el.querySelector('[data-k=value]').value = fmtInput(p.value);
+    el.querySelector('[data-k=loan]').value = fmtInput(p.loan);
+    el.querySelector('[data-k=share]').value = p.share ?? 100;
+    el.addEventListener('input', e => {
+      const k = e.target.dataset.k; if (!k) return;
+      if (k === 'name') p.name = e.target.value;
+      else if (k === 'share') p.share = Math.min(Math.max(parse(e.target.value), 0), 100);
+      else p[k] = parse(e.target.value);
+      el.querySelector('.prop-foot').innerHTML = propFoot(p);
+      renderSummary(); save();
+    });
+    el.addEventListener('focusout', e => {
+      const k = e.target.dataset.k;
+      if (k === 'value' || k === 'loan') e.target.value = fmtInput(p[k]);
+      if (k === 'share') e.target.value = p.share;
+    });
+    el.querySelector('.del').addEventListener('click', () => {
+      if (!confirm(`Remove ${p.name || 'this property'}?`)) return;
+      state.properties = state.properties.filter(x => x !== p);
+      save(); render(); toast('Property removed');
+    });
+    box.append(el);
+  });
+}
+
+function render(){
+  $('stocks').value = fmtInput(state.stocks);
+  renderProps(); renderSummary(); renderUpdated();
+}
+
+$('stocks').addEventListener('input', e => { state.stocks = parse(e.target.value); renderSummary(); save(); });
+$('stocks').addEventListener('focusout', e => { e.target.value = fmtInput(state.stocks); });
+
+$('addProp').addEventListener('click', () => {
+  state.properties.push({ id: uid(), name: '', value: 0, loan: 0, share: 100 });
+  save(); render();
+  const inputs = $('props').querySelectorAll('[data-k=name]');
+  inputs[inputs.length - 1].focus();
+});
+
+$('backupBtn').addEventListener('click', () => {
+  const blob = new Blob([JSON.stringify(state, null, 2)], { type:'application/json' });
+  const a = document.createElement('a');
+  a.href = URL.createObjectURL(blob);
+  a.download = `net-value-${new Date().toISOString().slice(0, 10)}.json`;
+  a.click();
+  setTimeout(() => URL.revokeObjectURL(a.href), 1000);
+});
+$('restoreBtn').addEventListener('click', () => $('restoreFile').click());
+$('restoreFile').addEventListener('change', async e => {
+  const f = e.target.files[0]; e.target.value = '';
+  if (!f) return;
+  try {
+    const d = JSON.parse(await f.text());
+    if (!Array.isArray(d.properties)) throw new Error();
+    if (state.properties.length && !confirm('Replace what’s on this page with the backup?')) return;
+    state = {
+      stocks: parse(d.stocks),
+      properties: d.properties.map(p => ({ id: p.id || uid(), name: String(p.name || ''), value: parse(p.value),
+        loan: parse(p.loan), share: p.share == null ? 100 : Math.min(Math.max(parse(p.share), 0), 100) })),
+      updated: d.updated || null,
+    };
+    save(); render(); toast('Backup restored');
+  } catch (err) { toast('That file isn’t a Net Value backup'); }
+});
+
+let tt;
+function toast(msg){
+  const t = $('toast'); t.textContent = msg; t.classList.add('show');
+  clearTimeout(tt); tt = setTimeout(() => t.classList.remove('show'), 2200);
+}
+
+render();
+</script>
+</body>
+</html>
