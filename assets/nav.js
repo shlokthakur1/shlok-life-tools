@@ -10,6 +10,8 @@ window.LIFE_TOOLS = [
     description: 'Labor, Liberal and One Nation compared for the Victorian election, with sources and a ballot to rate them.' },
   { id: 'networth', label: 'Net Value', path: 'networth/', mark: '◆',
     description: 'Shares, properties, loans and your ownership share, added up. Saved only in your browser.' },
+  { id: 'bearshare', label: 'BearShare', path: 'bearshare/', mark: '▲',
+    description: 'BearShare Australia: buy signals for ASX shares and ETFs from price history and news, with the reasons written out.' },
 ];
 
 (function () {
@@ -42,4 +44,10 @@ window.LIFE_TOOLS = [
   inner.append(brand, tabs);
   nav.append(inner);
   document.body.prepend(nav);
+
+  // On narrow screens the tab row scrolls sideways; make sure the current tab is visible.
+  const active = tabs.querySelector('[aria-current="page"]');
+  if (active && tabs.scrollWidth > tabs.clientWidth) {
+    tabs.scrollLeft = active.offsetLeft - tabs.offsetLeft - (tabs.clientWidth - active.offsetWidth) / 2;
+  }
 })();

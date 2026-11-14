@@ -22,6 +22,20 @@ When I ask you to add, finish, reopen, reword or remove tasks:
 
 If I just ask "what's on my list", read the file and answer; don't commit anything.
 
+## BearShare Australia (buy signals)
+
+The BearShare tab (`bearshare/index.html`) shows buy signals from `data/bearshare.json`. The **BearShare signals**
+workflow (`.github/workflows/bearshare-signals.yml`) rebuilds that file every weekday after the ASX close by running
+`bearshare/build_signals.py`, and commits it to `main`. Don't edit `data/bearshare.json` by hand.
+
+- **"What's a buy?"**: `git pull --rebase origin main`, read `data/bearshare.json` and list the items whose `signal`
+  is `strong-buy` or `buy`, best `score` first, each with its `summary`. Mention the `generated` date. Don't commit anything.
+- **Add or remove a share/ETF**: edit `bearshare/watchlist.json`. Each entry needs `code` (ASX code without `.AX`),
+  `name`, `type` (`share` or `etf`), `sector` and a Google News `news` query; ETFs also get a `topic` (what the news
+  is about, e.g. "the S&P 500"). Commit like `bearshare: add PLS` and push to `main`. The push re-runs the workflow,
+  so the new code appears a few minutes later.
+- Signals are general information, not financial advice. Keep the disclaimer on the page, and say so when you list buys.
+
 ## Adding or changing tools
 
 - Each tool is a folder with an `index.html` (`todo/`, `budget/`, ...).

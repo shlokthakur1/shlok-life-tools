@@ -1,0 +1,48 @@
+name: BearShare signals
+
+# Rebuilds data/bearshare.json (the BearShare tab's buy signals) from Yahoo
+# Finance prices and Google News headlines, then commits it to main. The page
+# reads that file live from GitHub, so no site redeploy is needed.
+
+on:
+  schedule:
+    # Weekdays after the ASX close: 07:23 UTC is 6:23pm AEDT / 5:23pm AEST.
+    - cron: '23 7 * * 1-5'
+  workflow_dispatch:
+  push:
+    branches: [main]
+    paths:
+      - 'bearshare/watchlist.json'
+      - 'bearshare/build_signals.py'
+      - '.github/workflows/bearshare-signals.yml'
+
+permissions:
+  contents: write
+
+concurrency:
+  group: bearshare-signals
+  cancel-in-progress: false
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v5
+
+      - name: Build signals
+        run: python3 bearshare/build_signals.py
+
+      - name: Commit data/bearshare.json
+        run: |
+          git config user.name 'github-actions[bot]'
+          git config user.email '41898733+github-actions[bot]@users.noreply.github.com'
+          git add data/bearshare.json
+          if git diff --cached --quiet; then echo 'No changes.'; exit 0; fi
+          git commit -m 'bearshare: update signals'
+          # The to-do page also commits to main, so rebase and retry if we raced it.
+          for attempt in 1 2 3 4; do
+            git pull --rebase origin main && git push origin HEAD:main && exit 0
+            sleep $((attempt * 5))
+          done
+          exit 1

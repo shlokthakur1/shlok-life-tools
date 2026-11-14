@@ -3,3 +3,6 @@
 *.PDF
 *.csv
 *.xlsx
+
+# Python bytecode from running bearshare/build_signals.py locally
+__pycache__/
