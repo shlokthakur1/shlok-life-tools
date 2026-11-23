@@ -22,6 +22,14 @@ When I ask you to add, finish, reopen, reword or remove tasks:
 
 If I just ask "what's on my list", read the file and answer; don't commit anything.
 
+## Dubai Relocation checklist
+
+The Dubai Relocation tab (`dubai/index.html`) reads and writes [data/dubai.md](data/dubai.md) the same way as the
+to-do list, so follow the same steps (pull first, push straight to `main`, commit like `dubai: done "Book flight"`).
+- `## Heading` lines are groups. Write them as `## Group name — by 30 Nov`; the page turns the part after the dash into a
+  date pill, marks the first group with open items as "Now" and flags past dates as overdue.
+- Asked "what's next for Dubai", list the open items in the first group that still has any, with its date.
+
 ## BearShare Australia (buy signals)
 
 The BearShare tab (`bearshare/index.html`) shows buy signals from `data/bearshare.json`. The **BearShare signals**

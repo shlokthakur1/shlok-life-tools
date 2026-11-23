@@ -12,6 +12,8 @@ window.LIFE_TOOLS = [
     description: 'Shares, properties, loans and your ownership share, added up. Saved only in your browser.' },
   { id: 'bearshare', label: 'BearShare', path: 'bearshare/', mark: '▲',
     description: 'BearShare Australia: buy signals for ASX shares and ETFs from price history and news, with the reasons written out.' },
+  { id: 'dubai', label: 'Dubai Relocation', path: 'dubai/', mark: '✈',
+    description: 'Grouped checklist for the Dubai move, with a countdown to 4 January and what to focus on now.' },
 ];
 
 (function () {

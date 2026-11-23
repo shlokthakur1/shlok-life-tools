@@ -1,0 +1,667 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<title>Dubai Relocation · Life Tools</title>
+<link rel="icon" href="../assets/icon.svg" type="image/svg+xml">
+<meta name="apple-mobile-web-app-title" content="Dubai">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Archivo:wght@600;700;800&family=Public+Sans:wght@400;500;600;700&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="../assets/base.css">
+<style>
+  body{ --page-max:680px; }
+  .page{ max-width:680px; margin:0 auto; padding:22px 16px 96px; }
+
+  /* ---------- header ---------- */
+  .head{ display:flex; align-items:flex-start; justify-content:space-between; gap:12px; margin-bottom:16px; }
+  .head h1{ font-size:28px; font-weight:800; }
+  .head .sub{ margin:4px 0 0; color:var(--ink-muted); font-size:13px; }
+  .head-actions{ display:flex; align-items:center; gap:2px; }
+  .sync{ font-size:12px; color:var(--ink-muted); margin-right:6px; white-space:nowrap; }
+  .sync.saving{ color:var(--warn); }
+  .sync.error{ color:var(--critical); }
+  .btn-icon{ width:38px; height:38px; padding:0; justify-content:center; font-size:17px; color:var(--ink-2); }
+  .btn-icon.spin{ animation:spin .8s linear infinite; }
+  @keyframes spin{ to{ transform:rotate(360deg); } }
+
+  /* ---------- countdown + progress ---------- */
+  .hero{ display:grid; grid-template-columns:auto 1fr; gap:18px; align-items:center; padding:18px; margin-bottom:14px;
+    background:var(--surface); border:1px solid var(--line); border-radius:16px; box-shadow:var(--shadow); }
+  .days{ text-align:center; min-width:84px; }
+  .days .n{ font-family:"Archivo",system-ui,sans-serif; font-size:44px; font-weight:800; line-height:1; color:var(--accent); font-variant-numeric:tabular-nums; }
+  .days .l{ font-size:11.5px; font-weight:700; color:var(--ink-muted); text-transform:uppercase; letter-spacing:.05em; margin-top:4px; }
+  .prog-label{ display:flex; justify-content:space-between; gap:8px; font-size:13px; color:var(--ink-2); margin-bottom:7px; }
+  .prog-label b{ color:var(--ink); }
+  .bar{ height:10px; border-radius:99px; background:var(--surface-2); border:1px solid var(--line); overflow:hidden; }
+  .bar > span{ display:block; height:100%; background:var(--accent); border-radius:99px; transition:width .3s; }
+  .focus{ margin-top:10px; font-size:13px; line-height:1.45; color:var(--ink-2); }
+  .focus b{ color:var(--ink); }
+
+  .banner{ display:flex; align-items:center; justify-content:space-between; gap:12px; padding:12px 14px;
+    border-radius:12px; background:var(--accent-wash); color:var(--ink-2); font-size:13px; line-height:1.45; margin-bottom:14px; }
+  .banner b{ color:var(--ink); }
+  .banner .btn{ flex:none; }
+
+  /* ---------- toolbar ---------- */
+  .toolbar{ display:flex; justify-content:flex-end; margin:0 0 10px; }
+  .toggle{ display:inline-flex; align-items:center; gap:8px; font-size:13px; font-weight:600; color:var(--ink-2); cursor:pointer; }
+  .toggle input{ accent-color:var(--accent); width:16px; height:16px; margin:0; }
+
+  /* ---------- groups ---------- */
+  .group{ margin-bottom:18px; }
+  .group-head{ display:flex; align-items:center; gap:8px; margin:0 4px 7px; flex-wrap:wrap; }
+  .group-title{ font-family:"Public Sans",system-ui,sans-serif; font-size:13px; font-weight:700; color:var(--ink); }
+  .pill{ font-size:11.5px; font-weight:700; padding:2px 8px; border-radius:99px; background:var(--surface-2); color:var(--ink-2); border:1px solid var(--line); white-space:nowrap; }
+  .pill.now{ background:var(--accent); border-color:var(--accent); color:var(--accent-ink); }
+  .pill.late{ background:var(--critical-wash); border-color:transparent; color:var(--critical); }
+  .pill.done{ background:var(--good-wash); border-color:transparent; color:var(--good); }
+  .count{ margin-left:auto; font-size:12px; font-weight:600; color:var(--ink-muted); font-variant-numeric:tabular-nums; }
+  .group.is-now .items{ border-color:var(--accent); }
+  .group.is-complete .group-title{ color:var(--ink-muted); }
+
+  .items{ list-style:none; margin:0; padding:0; background:var(--surface); border:1px solid var(--line);
+    border-radius:14px; box-shadow:var(--shadow); overflow:hidden; }
+  .item{ display:flex; align-items:center; border-top:1px solid var(--line); }
+  .item:first-child{ border-top:none; }
+  .item label{ flex:1; min-width:0; display:flex; align-items:flex-start; gap:12px; cursor:pointer;
+    padding:13px 6px 13px calc(14px + var(--indent, 0) * 22px); }
+  .item input[type=checkbox]{ appearance:none; -webkit-appearance:none; flex:none; width:22px; height:22px; margin:0;
+    border-radius:50%; border:2px solid var(--line-strong); background:var(--surface); display:grid; place-content:center;
+    cursor:pointer; transition:background .15s, border-color .15s; }
+  .item input[type=checkbox]:hover{ border-color:var(--accent); }
+  .item input[type=checkbox]:checked{ background:var(--accent); border-color:var(--accent); }
+  .item input[type=checkbox]:checked::after{ content:""; width:9px; height:5px; border:2px solid var(--accent-ink);
+    border-top:0; border-right:0; transform:translate(0,-1px) rotate(-45deg); }
+  .item input[type=checkbox]:focus-visible{ outline:2px solid var(--accent); outline-offset:2px; }
+  .item .text{ font-size:15px; line-height:22px; overflow-wrap:anywhere; }
+  .item.done .text{ color:var(--ink-muted); text-decoration:line-through; }
+  .item.unsaved .text{ opacity:.65; }
+  .del{ flex:none; width:40px; height:40px; margin-right:6px; border:none; border-radius:8px; background:none;
+    color:var(--ink-muted); font-size:20px; line-height:1; cursor:pointer; }
+  .del:hover{ color:var(--critical); background:var(--critical-wash); }
+  .del:focus-visible{ outline:2px solid var(--accent); }
+  @media (hover:hover){
+    .del{ opacity:0; }
+    .item:hover .del, .del:focus-visible{ opacity:1; }
+  }
+  .all-done-row{ padding:12px 14px; font-size:13px; color:var(--good); font-weight:600; }
+
+  /* ---------- add form ---------- */
+  .add-form{ display:flex; gap:8px; margin-top:24px; }
+  .add-form input, .add-form select{ font:inherit; font-size:16px; color:var(--ink); background:var(--surface);
+    border:1px solid var(--line-strong); border-radius:10px; }
+  .add-form input{ flex:1; min-width:0; padding:11px 14px; }
+  .add-form select{ flex:none; max-width:38%; padding:11px 8px; }
+  .add-form input:focus-visible, .add-form select:focus-visible{ outline:2px solid var(--accent); outline-offset:1px; border-color:var(--accent); }
+  .add-form .btn{ font-size:15px; padding:0 18px; border-radius:10px; }
+
+  .intro{ font-size:13px; color:var(--ink-2); line-height:1.5; margin:0 4px 16px; }
+  .error-box{ padding:16px; border-radius:12px; background:var(--critical-wash); color:var(--critical); font-size:13.5px; line-height:1.5; }
+  .skeleton{ height:50px; border-radius:14px; background:var(--surface); border:1px solid var(--line); margin-bottom:8px; opacity:.6; }
+
+  /* ---------- settings dialog ---------- */
+  dialog{ width:min(520px, calc(100vw - 32px)); max-height:calc(100dvh - 48px); padding:0; border:1px solid var(--line);
+    border-radius:16px; background:var(--surface); color:var(--ink); box-shadow:var(--shadow); }
+  dialog::backdrop{ background:rgba(10,15,13,.45); }
+  .dlg{ padding:20px; }
+  .dlg h2{ font-size:18px; margin-bottom:8px; }
+  .dlg p, .dlg ol{ font-size:13px; line-height:1.55; color:var(--ink-2); margin:0 0 12px; }
+  .dlg ol{ padding-left:20px; }
+  .dlg code{ font-size:12px; background:var(--surface-2); padding:1px 5px; border-radius:5px; }
+  .field{ display:block; margin-bottom:12px; font-size:12.5px; font-weight:600; color:var(--ink-2); }
+  .field input{ display:block; width:100%; margin-top:5px; padding:10px 12px; font:inherit; font-size:16px; font-weight:400;
+    color:var(--ink); background:var(--surface); border:1px solid var(--line-strong); border-radius:9px; }
+  .field input:focus-visible{ outline:2px solid var(--accent); outline-offset:1px; border-color:var(--accent); }
+  .dlg-actions{ display:flex; gap:8px; align-items:center; flex-wrap:wrap; border-top:1px solid var(--line); padding-top:14px; }
+  .dlg-actions .spacer{ flex:1; }
+  .dlg-msg{ font-size:12.5px; margin:0 0 12px; }
+  .dlg-msg.error{ color:var(--critical); }
+  @media (max-width:420px){ .hero{ gap:14px; padding:16px 14px; } .days .n{ font-size:38px; } .days{ min-width:68px; } }
+</style>
+</head>
+<body data-tool="dubai">
+<script src="../assets/nav.js"></script>
+
+<main class="page">
+  <header class="head">
+    <div>
+      <h1>Dubai Relocation</h1>
+      <p class="sub">Everything to do before 4 January 2027</p>
+    </div>
+    <div class="head-actions">
+      <span class="sync" id="syncStatus" role="status" aria-live="polite"></span>
+      <button class="btn btn-ghost btn-icon" id="btnRefresh" type="button" title="Refresh" aria-label="Refresh">↻</button>
+      <button class="btn btn-ghost btn-icon" id="btnSettings" type="button" title="Sync settings" aria-label="Sync settings">⚙︎</button>
+    </div>
+  </header>
+
+  <section class="hero" aria-label="Progress">
+    <div class="days"><div class="n" id="daysLeft">–</div><div class="l" id="daysLabel">days to go</div></div>
+    <div>
+      <div class="prog-label"><span id="progText">Loading…</span><b id="progPct"></b></div>
+      <div class="bar" role="progressbar" aria-label="Checklist progress" aria-valuemin="0" aria-valuemax="100" id="bar"><span id="barFill" style="width:0"></span></div>
+      <div class="focus" id="focus"></div>
+    </div>
+  </section>
+
+  <div class="banner" id="connectBanner" hidden>
+    <div><b>View only on this device.</b> Connect GitHub once to tick things off here. (If you've connected the To-do tab, it uses the same token.)</div>
+    <button class="btn btn-sm btn-primary" id="btnConnect" type="button">Connect</button>
+  </div>
+
+  <div class="toolbar"><label class="toggle"><input type="checkbox" id="hideDone"> Hide finished</label></div>
+
+  <div id="list"><div class="skeleton"></div><div class="skeleton"></div><div class="skeleton"></div></div>
+
+  <form class="add-form" id="addForm" autocomplete="off">
+    <input id="addText" type="text" placeholder="Add something…" maxlength="300" aria-label="New item" enterkeyhint="done">
+    <select id="addSection" aria-label="Group" hidden></select>
+    <button class="btn btn-primary" type="submit">Add</button>
+  </form>
+</main>
+
+<dialog id="settings" aria-labelledby="settingsTitle">
+  <form class="dlg" id="settingsForm" method="dialog">
+    <h2 id="settingsTitle">Sync with GitHub</h2>
+    <p>This checklist is the file <code>data/dubai.md</code> in your GitHub repo. Anyone can view it there, but editing needs a token. It's the same token as the To-do tab, so connecting here connects both.</p>
+    <ol>
+      <li>Open <a id="tokenLink" href="https://github.com/settings/personal-access-tokens/new" target="_blank" rel="noopener noreferrer">GitHub → new fine-grained token</a>.</li>
+      <li>Under <b>Repository access</b>, choose <b>Only select repositories</b> → <b>shlok-life-tools</b>.</li>
+      <li>Check <b>Permissions → Contents</b> is <b>Read and write</b>, then generate it and paste it below.</li>
+    </ol>
+    <p class="dlg-msg" id="settingsMsg" hidden></p>
+    <label class="field">GitHub token
+      <input type="password" id="tokenInput" autocomplete="off" spellcheck="false" autocapitalize="off" placeholder="github_pat_…">
+    </label>
+    <p style="font-size:12px;color:var(--ink-muted)">The token is saved only in this browser on this device.</p>
+    <div class="dlg-actions">
+      <button class="btn btn-sm" type="button" id="forgetToken">Forget token</button>
+      <span class="spacer"></span>
+      <button class="btn btn-sm" type="button" id="cancelSettings">Cancel</button>
+      <button class="btn btn-sm btn-primary" type="submit" id="saveSettings">Save</button>
+    </div>
+  </form>
+</dialog>
+
+<div class="toast" id="toast" role="status" aria-live="polite"></div>
+
+<script>
+/* ====================================================================
+   The checklist is a Markdown file in the repo (data/dubai.md), read and
+   written through the GitHub contents API, exactly like the To-do tab.
+     ## Group name — by 30 Nov     (the "— by …" part becomes a date pill)
+     - [ ] open item
+     - [x] finished item
+   The GitHub token is shared with the To-do tab (stored under its key).
+   ==================================================================== */
+const MOVE_DATE = new Date(2027, 0, 4);          // 4 Jan 2027, local time
+const DEFAULT_YEAR_FOR = m => (m >= 10 ? 2026 : 2027); // "30 Nov" → 2026, "3 Jan" → 2027
+const cfg = { repo: 'shlokthakur1/shlok-life-tools', branch: 'main', path: 'data/dubai.md', token: '' };
+const TOKEN_KEY = 'life-tools.todo.v1';           // shared with the To-do tab
+const PREFS_KEY = 'life-tools.dubai.v1';
+
+cfg.token = readToken();
+const prefs = loadPrefs();
+const state = { remote: null, sha: null, pending: [], generation: 0, loading: false, lastFetch: 0, error: null };
+
+function readToken() {
+  try { return (JSON.parse(localStorage.getItem(TOKEN_KEY) || '{}').token) || ''; } catch (e) { return ''; }
+}
+function writeToken(token) {
+  try {
+    const saved = JSON.parse(localStorage.getItem(TOKEN_KEY) || '{}');
+    saved.token = token;
+    localStorage.setItem(TOKEN_KEY, JSON.stringify(saved));
+  } catch (e) {}
+}
+function loadPrefs() {
+  try { return { hideDone: false, ...JSON.parse(localStorage.getItem(PREFS_KEY) || '{}') }; } catch (e) { return { hideDone: false }; }
+}
+function savePrefs() { try { localStorage.setItem(PREFS_KEY, JSON.stringify(prefs)); } catch (e) {} }
+
+/* ====================================================================
+   Markdown parsing + edits
+   ==================================================================== */
+const ITEM_RE = /^(\s*)[-*+]\s+\[([ xX])\]\s?(.*)$/;
+const SECTION_RE = /^##\s+(.+?)\s*#*\s*$/;
+const MONTHS = ['jan','feb','mar','apr','may','jun','jul','aug','sep','oct','nov','dec'];
+
+function parse(md) {
+  const lines = md.replace(/\r\n/g, '\n').split('\n');
+  const items = [], sections = [];
+  let section = null;
+  lines.forEach((line, i) => {
+    const s = line.match(SECTION_RE);
+    if (s) { section = s[1]; sections.push({ name: section, line: i }); return; }
+    const m = line.match(ITEM_RE);
+    if (m) items.push({ line: i, indent: Math.floor(m[1].replace(/\t/g, '  ').length / 2),
+      done: m[2] !== ' ', text: m[3].trim(), section });
+  });
+  const title = lines.find(l => /^#\s/.test(l));
+  const titleIdx = lines.indexOf(title);
+  const firstSec = sections.length ? sections[0].line : lines.length;
+  const intro = lines.slice(titleIdx + 1, firstSec).filter(l => l.trim() && !ITEM_RE.test(l)).join(' ').trim();
+  return { lines, items, sections, intro };
+}
+
+// "Lock in the job — by 30 Nov" → { title, when: "by 30 Nov", due: Date }
+// "Wind down Melbourne — 22 Dec to 3 Jan" → due is the last date mentioned.
+function splitHeading(name) {
+  const parts = name.split(/\s+[—–-]\s+/);
+  const title = parts[0];
+  const when = parts.slice(1).join(' — ');
+  let due = null;
+  const dates = [...when.matchAll(/(\d{1,2})\s+([A-Za-z]{3})[a-z]*/g)];
+  if (dates.length) {
+    const [, d, mon] = dates[dates.length - 1];
+    const m = MONTHS.indexOf(mon.toLowerCase());
+    if (m !== -1) due = new Date(DEFAULT_YEAR_FOR(m), m, +d, 23, 59);
+  }
+  const paren = title.match(/^(.*?)\s*\((.+)\)\s*$/);
+  if (!when && paren) return { title: paren[1], when: paren[2], due: null };
+  return { title, when, due };
+}
+
+function refOf(items, item) {
+  const same = items.filter(it => it.text === item.text && it.done === item.done);
+  return { text: item.text, done: item.done, nth: same.indexOf(item) };
+}
+function findItem(parsed, ref) {
+  const same = parsed.items.filter(it => it.text === ref.text && it.done === ref.done);
+  return same[ref.nth] || same[0] || null;
+}
+
+const ops = {
+  add(text, section) {
+    return { message: `dubai: add "${short(text)}"`, apply(md) {
+      const { lines, items, sections } = parse(md);
+      const entry = `- [ ] ${text}`;
+      const inSection = items.filter(it => it.section === section);
+      const heading = sections.find(s => s.name === section);
+      if (inSection.length) lines.splice(inSection[inSection.length - 1].line + 1, 0, entry);
+      else if (heading) lines.splice(heading.line + 1, 0, '', entry);
+      else {
+        while (lines.length && lines[lines.length - 1] === '') lines.pop();
+        lines.push('', entry, '');
+      }
+      return lines.join('\n');
+    }};
+  },
+  toggle(ref) {
+    return { message: `dubai: ${ref.done ? 'reopen' : 'done'} "${short(ref.text)}"`, apply(md) {
+      const p = parse(md);
+      const it = findItem(p, ref);
+      if (!it) return null;
+      p.lines[it.line] = p.lines[it.line].replace(/\[[ xX]\]/, ref.done ? '[ ]' : '[x]');
+      return p.lines.join('\n');
+    }};
+  },
+  remove(ref) {
+    return { message: `dubai: remove "${short(ref.text)}"`, apply(md) {
+      const p = parse(md);
+      const it = findItem(p, ref);
+      if (!it) return null;
+      p.lines.splice(it.line, 1);
+      return p.lines.join('\n').replace(/\n{3,}/g, '\n\n');
+    }};
+  },
+};
+
+function currentMarkdown() {
+  return state.pending.reduce((md, op) => op.apply(md) ?? md, state.remote);
+}
+
+/* ====================================================================
+   GitHub contents API (same as the To-do tab)
+   ==================================================================== */
+function contentsUrl() {
+  return `https://api.github.com/repos/${cfg.repo}/contents/${cfg.path.split('/').map(encodeURIComponent).join('/')}`;
+}
+function ghHeaders(extra) {
+  const h = { Accept: 'application/vnd.github+json', ...extra };
+  if (cfg.token) h.Authorization = `Bearer ${cfg.token}`;
+  return h;
+}
+async function ghError(res) {
+  let msg = '';
+  try { msg = (await res.json()).message || ''; } catch (e) {}
+  const err = new Error(msg || `GitHub returned ${res.status}`);
+  err.status = res.status;
+  if (res.status === 401) err.message = 'GitHub rejected the token. It may have expired, so paste a new one in settings (⚙︎).';
+  else if (res.status === 403 && res.headers.get('x-ratelimit-remaining') === '0') err.message = 'GitHub rate limit reached. Connect a token, or try again in a few minutes.';
+  else if (res.status === 403) err.message = 'This token can’t edit the repo. It needs Contents: Read and write on ' + cfg.repo + '.';
+  return err;
+}
+async function fetchRemote() {
+  let res;
+  try {
+    res = await fetch(`${contentsUrl()}?ref=${encodeURIComponent(cfg.branch)}`, { headers: ghHeaders(), cache: 'no-store' });
+  } catch (e) {
+    throw new Error('Couldn’t reach GitHub. Check your connection.');
+  }
+  if (res.status === 404) {
+    if (cfg.token) return { content: '# Dubai Relocation\n', sha: null };
+    throw new Error(`Couldn’t find ${cfg.path} in ${cfg.repo}.`);
+  }
+  if (!res.ok) throw await ghError(res);
+  const json = await res.json();
+  return { content: decodeBase64(json.content || ''), sha: json.sha };
+}
+async function putRemote(content, sha, message) {
+  const body = { message, content: encodeBase64(content), branch: cfg.branch };
+  if (sha) body.sha = sha;
+  let res;
+  try {
+    res = await fetch(contentsUrl(), { method: 'PUT', headers: ghHeaders({ 'Content-Type': 'application/json' }), body: JSON.stringify(body) });
+  } catch (e) {
+    throw new Error('Couldn’t reach GitHub. Your change wasn’t saved.');
+  }
+  if (!res.ok) throw await ghError(res);
+  return (await res.json()).content.sha;
+}
+function decodeBase64(b64) {
+  const bin = atob(b64.replace(/\s/g, ''));
+  return new TextDecoder().decode(Uint8Array.from(bin, c => c.charCodeAt(0)));
+}
+function encodeBase64(str) {
+  const bytes = new TextEncoder().encode(str);
+  let bin = '';
+  for (let i = 0; i < bytes.length; i += 0x8000) bin += String.fromCharCode(...bytes.subarray(i, i + 0x8000));
+  return btoa(bin);
+}
+
+/* ====================================================================
+   Load + save
+   ==================================================================== */
+async function refresh({ quiet = false } = {}) {
+  if (state.pending.length || state.loading) return;
+  state.loading = true;
+  renderStatus();
+  const gen = state.generation;
+  try {
+    const { content, sha } = await fetchRemote();
+    if (gen === state.generation && !state.pending.length) { state.remote = content; state.sha = sha; state.error = null; }
+  } catch (err) {
+    if (state.remote === null) state.error = err.message;
+    else if (!quiet) showToast(err.message);
+  } finally {
+    state.loading = false;
+    state.lastFetch = Date.now();
+    render();
+  }
+}
+
+function enqueue(op) {
+  if (state.remote === null) return;
+  if (!cfg.token) { openSettings(); return; }
+  state.pending.push(op);
+  render();
+  drain();
+}
+
+let draining = false;
+async function drain() {
+  if (draining) return;
+  draining = true;
+  while (state.pending.length) {
+    try { await save(state.pending[0]); }
+    catch (err) { showToast(err.message); }
+    state.pending.shift();
+    render();
+  }
+  draining = false;
+}
+
+async function save(op) {
+  for (let attempt = 0; attempt < 3; attempt++) {
+    const next = op.apply(state.remote);
+    if (next === null || next === state.remote) return;
+    try {
+      state.sha = await putRemote(next, state.sha, op.message);
+      state.remote = next;
+      state.generation++;
+      return;
+    } catch (err) {
+      if (err.status !== 409 && err.status !== 422) throw err;
+      const fresh = await fetchRemote();
+      state.remote = fresh.content; state.sha = fresh.sha;
+      state.generation++;
+    }
+  }
+  throw new Error('The checklist kept changing while saving. Refresh and try again.');
+}
+
+/* ====================================================================
+   Rendering
+   ==================================================================== */
+const $ = id => document.getElementById(id);
+const fmtDate = d => d.toLocaleDateString('en-AU', { day: 'numeric', month: 'short' });
+
+function renderCountdown() {
+  const today = new Date(); today.setHours(0, 0, 0, 0);
+  const days = Math.round((MOVE_DATE - today) / 86400000);
+  $('daysLeft').textContent = Math.max(days, 0);
+  $('daysLabel').textContent = days === 1 ? 'day to go' : days <= 0 ? 'you’re there' : 'days to go';
+}
+
+function render() {
+  renderStatus();
+  renderCountdown();
+  $('connectBanner').hidden = !!cfg.token || state.remote === null;
+  const list = $('list');
+
+  if (state.remote === null) {
+    if (state.error) { list.replaceChildren(el('div', 'error-box', state.error)); $('progText').textContent = 'Couldn’t load the checklist'; }
+    renderSectionPicker([]);
+    return;
+  }
+
+  const parsed = parse(currentMarkdown());
+  const unsaved = unsavedLines(parsed);
+  const total = parsed.items.length;
+  const doneCount = parsed.items.filter(it => it.done).length;
+  const pct = total ? Math.round(doneCount / total * 100) : 0;
+  $('progText').textContent = `${doneCount} of ${total} done`;
+  $('progPct').textContent = `${pct}%`;
+  $('barFill').style.width = pct + '%';
+  $('bar').setAttribute('aria-valuenow', pct);
+  renderSectionPicker(parsed.sections);
+
+  // Group items by section, in file order.
+  const groups = [];
+  const bySection = new Map();
+  if (parsed.items.some(it => it.section === null)) { const g = { name: null, items: [] }; groups.push(g); bySection.set(null, g); }
+  for (const s of parsed.sections) { const g = { name: s.name, items: [] }; groups.push(g); bySection.set(s.name, g); }
+  for (const it of parsed.items) bySection.get(it.section).items.push(it);
+
+  // The focus group is the first one that still has open items.
+  const focusGroup = groups.find(g => g.items.some(it => !it.done));
+  const now = new Date();
+
+  const focus = $('focus');
+  focus.replaceChildren();
+  if (!total) focus.textContent = '';
+  else if (!focusGroup) focus.textContent = 'Everything’s ticked off. Enjoy Dubai.';
+  else {
+    const h = splitHeading(focusGroup.name || 'Unsorted');
+    const left = focusGroup.items.filter(it => !it.done).length;
+    focus.append('Focus on ', el('b', '', h.title), ` — ${left} left` + (h.when ? `, ${h.when}` : '') + '. Ignore the rest for now.');
+  }
+
+  const frag = document.createDocumentFragment();
+  if (parsed.intro) frag.append(el('p', 'intro', parsed.intro));
+  for (const g of groups) {
+    const open = g.items.filter(it => !it.done).length;
+    const complete = g.items.length > 0 && open === 0;
+    const h = splitHeading(g.name || 'Other');
+    const late = !complete && h.due && h.due < now;
+    const section = el('section', 'group' + (g === focusGroup ? ' is-now' : '') + (complete ? ' is-complete' : ''));
+    const head = el('div', 'group-head');
+    head.append(el('h2', 'group-title', h.title));
+    if (complete) head.append(el('span', 'pill done', '✓ Done'));
+    else if (g === focusGroup) head.append(el('span', 'pill now', 'Now' + (h.when ? ' · ' + h.when : '')));
+    else if (late) head.append(el('span', 'pill late', 'Overdue · ' + h.when));
+    else if (h.when) head.append(el('span', 'pill', h.when));
+    head.append(el('span', 'count', `${g.items.length - open}/${g.items.length}`));
+    section.append(head);
+
+    const visible = prefs.hideDone ? g.items.filter(it => !it.done) : g.items;
+    const ul = el('ul', 'items');
+    if (!visible.length) ul.append(el('li', 'all-done-row', g.items.length ? 'All done here.' : 'Nothing in this group yet.'));
+    for (const it of visible) ul.append(itemRow(it, parsed.items, unsaved));
+    section.append(ul);
+    frag.append(section);
+  }
+  list.replaceChildren(frag);
+}
+
+function unsavedLines(parsed) {
+  if (!state.pending.length) return new Set();
+  const saved = new Set(parse(state.remote).items.map(it => `${it.done}|${it.text}`));
+  return new Set(parsed.items.filter(it => !saved.has(`${it.done}|${it.text}`)).map(it => it.line));
+}
+
+function itemRow(it, allItems, unsaved) {
+  const ref = refOf(allItems, it);
+  const li = el('li', 'item' + (it.done ? ' done' : '') + (unsaved.has(it.line) ? ' unsaved' : ''));
+  li.style.setProperty('--indent', Math.min(it.indent, 4));
+  const label = el('label');
+  const box = document.createElement('input');
+  box.type = 'checkbox';
+  box.checked = it.done;
+  box.addEventListener('click', e => { e.preventDefault(); enqueue(ops.toggle(ref)); });
+  const text = el('span', 'text');
+  appendLinkified(text, it.text);
+  label.append(box, text);
+  li.append(label);
+  if (cfg.token) {
+    const del = el('button', 'del', '×');
+    del.type = 'button';
+    del.title = 'Delete';
+    del.setAttribute('aria-label', `Delete “${it.text}”`);
+    del.onclick = () => enqueue(ops.remove(ref));
+    li.append(del);
+  }
+  return li;
+}
+
+function renderSectionPicker(sections) {
+  const sel = $('addSection');
+  const prev = sel.value;
+  sel.replaceChildren();
+  sel.hidden = !sections.length;
+  if (!sections.length) return;
+  sel.append(...sections.map(s => { const o = el('option', '', splitHeading(s.name).title); o.value = s.name; return o; }));
+  const parsed = state.remote === null ? null : parse(currentMarkdown());
+  const focusName = parsed && (parsed.sections.find(s => parsed.items.some(it => it.section === s.name && !it.done)) || {}).name;
+  sel.value = sections.some(s => s.name === prev) ? prev : (focusName || sections[0].name);
+}
+
+function renderStatus() {
+  const s = $('syncStatus');
+  $('btnRefresh').classList.toggle('spin', state.loading);
+  if (state.pending.length) { s.textContent = 'Saving…'; s.className = 'sync saving'; }
+  else if (state.error && state.remote === null) { s.textContent = 'Offline'; s.className = 'sync error'; }
+  else if (state.remote !== null && !cfg.token) { s.textContent = 'View only'; s.className = 'sync'; }
+  else if (state.remote !== null) { s.textContent = 'Synced'; s.className = 'sync'; }
+  else { s.textContent = ''; s.className = 'sync'; }
+}
+
+function appendLinkified(node, text) {
+  text.split(/(https?:\/\/[^\s<>]+[^\s<>.,;:!?)\]'"])/g).forEach((part, i) => {
+    if (i % 2) {
+      const a = el('a', '', part.replace(/^https?:\/\//, ''));
+      a.href = part; a.target = '_blank'; a.rel = 'noopener noreferrer';
+      node.append(a);
+    } else if (part) node.append(part);
+  });
+}
+function el(tag, className, text) {
+  const node = document.createElement(tag);
+  if (className) node.className = className;
+  if (text !== undefined) node.textContent = text;
+  return node;
+}
+function short(s) { return s.length > 50 ? s.slice(0, 49) + '…' : s; }
+function showToast(msg) {
+  const t = $('toast');
+  t.textContent = msg;
+  t.classList.add('show');
+  clearTimeout(showToast._t);
+  showToast._t = setTimeout(() => t.classList.remove('show'), 3200);
+}
+
+/* ====================================================================
+   Events
+   ==================================================================== */
+$('hideDone').checked = prefs.hideDone;
+$('hideDone').addEventListener('change', e => { prefs.hideDone = e.target.checked; savePrefs(); render(); });
+
+$('addForm').addEventListener('submit', e => {
+  e.preventDefault();
+  const input = $('addText');
+  const text = input.value.replace(/\s+/g, ' ').trim();
+  if (!text) return;
+  if (!cfg.token) { openSettings(); return; }
+  if (state.remote === null) return;
+  enqueue(ops.add(text, $('addSection').value || null));
+  input.value = '';
+  input.focus();
+});
+
+$('btnRefresh').onclick = () => refresh();
+$('btnSettings').onclick = openSettings;
+$('btnConnect').onclick = openSettings;
+document.addEventListener('visibilitychange', () => {
+  if (!document.hidden && Date.now() - state.lastFetch > 15000) refresh({ quiet: true });
+});
+
+const dialog = $('settings');
+function openSettings() {
+  $('tokenInput').value = cfg.token;
+  $('tokenLink').href = 'https://github.com/settings/personal-access-tokens/new?' + new URLSearchParams({
+    name: 'Life Tools', description: `Lets Life Tools pages edit files under data/ in ${cfg.repo}.`,
+    target_name: cfg.repo.split('/')[0], expires_in: '365', contents: 'write',
+  });
+  setSettingsMsg('');
+  if (typeof dialog.showModal === 'function') dialog.showModal(); else dialog.setAttribute('open', '');
+}
+function closeSettings() { if (typeof dialog.close === 'function') dialog.close(); else dialog.removeAttribute('open'); }
+function setSettingsMsg(msg, isError) {
+  const m = $('settingsMsg');
+  m.hidden = !msg; m.textContent = msg; m.className = 'dlg-msg' + (isError ? ' error' : '');
+}
+$('cancelSettings').onclick = closeSettings;
+dialog.addEventListener('click', e => { if (e.target === dialog) closeSettings(); });
+$('forgetToken').onclick = () => {
+  cfg.token = ''; writeToken('');
+  closeSettings(); showToast('Token removed from this device (To-do tab too)'); render();
+};
+$('settingsForm').addEventListener('submit', async e => {
+  e.preventDefault();
+  const prevToken = cfg.token;
+  cfg.token = $('tokenInput').value.trim();
+  $('saveSettings').disabled = true;
+  setSettingsMsg('Checking…');
+  try {
+    const { content, sha } = await fetchRemote();
+    state.remote = content; state.sha = sha; state.error = null; state.generation++;
+    writeToken(cfg.token);
+    closeSettings();
+    showToast(cfg.token ? 'Connected. You can tick things off now.' : 'Saved');
+    render();
+  } catch (err) {
+    cfg.token = prevToken;
+    setSettingsMsg(err.message, true);
+  } finally {
+    $('saveSettings').disabled = false;
+  }
+});
+
+render();
+refresh();
+</script>
+</body>
+</html>

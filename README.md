@@ -9,6 +9,7 @@ Small personal tools, live at **https://shlokthakur1.github.io/shlok-life-tools/
 | [Vote](https://shlokthakur1.github.io/shlok-life-tools/vote/) | Victorian election 2026: party policies compared by issue, with sources, links to the originals and a private rating ballot. |
 | [Net Value](https://shlokthakur1.github.io/shlok-life-tools/networth/) | Shares/ETFs and properties with loans and ownership share, totalled into net value. Data stays in the browser only. |
 | [BearShare](https://shlokthakur1.github.io/shlok-life-tools/bearshare/) | BearShare Australia: Strong Buy / Buy / Watch / Avoid signals for ASX shares and ETFs, scored on 5 years of price history and 30 days of news, with the reasons written out. Rebuilt every weekday after the close by a GitHub Action. General information, not advice. |
+| [Dubai Relocation](https://shlokthakur1.github.io/shlok-life-tools/dubai/) | Grouped checklist for the Dubai move kept in [`data/dubai.md`](data/dubai.md), with a countdown to 4 January 2027. Same GitHub sync as To-do. |
 
 ## To-do sync
 
