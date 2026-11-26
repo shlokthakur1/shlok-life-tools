@@ -6,3 +6,4 @@
 - [ ] Send UAE Police Check
 - [ ] Organise Vietnamese license
 - [ ] Organise Vietname accomodation
+- [ ] Organise Vietname Visa
