@@ -5,3 +5,4 @@
 - [ ] Notarise degree
 - [ ] Send UAE Police Check
 - [ ] Organise Vietnamese license
+- [ ] Organise Vietname accomodation
