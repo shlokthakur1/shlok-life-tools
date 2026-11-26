@@ -4,3 +4,4 @@
 - [x] Ask Claude to add a task from the Code tab in the Claude app
 - [ ] Notarise degree
 - [ ] Send UAE Police Check
+- [ ] Organise Vietnamese license
