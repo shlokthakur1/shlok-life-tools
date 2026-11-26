@@ -63,6 +63,9 @@
   table.data th:first-child, table.data td:first-child{ text-align:left; white-space:normal; }
   table.data thead th{ font-weight:600; color:var(--ink-2); font-size:13px; border-bottom:1px solid var(--line-strong); }
   table.data td.neg{ color:var(--critical); font-weight:700; }
+  table.data.costs{ max-width:none; min-width:720px; }
+  table.data.costs td, table.data.costs th{ text-align:left; white-space:normal; vertical-align:top; width:20%; }
+  table.data.costs td:first-child{ font-weight:600; color:var(--ink-2); }
   .tablenote{ max-width:720px; font-size:12.5px; line-height:1.5; color:var(--ink-muted); margin:8px 0 0; }
 
   /* the scorecard is drawn as a ballot paper */
@@ -128,15 +131,37 @@
       <li><b>Early voting:</b> 18 to 27 November</li>
       <li><b>Enrolment:</b> closed 3 November. <a href="https://www.vec.vic.gov.au/enrolment/check-my-enrolment" target="_blank" rel="noopener">Check yours at the VEC</a></li>
     </ul>
-    <p class="fine">Policies as published up to 26 November 2026. Greens added on 26 November. Promises can change before the 28th. Figures in party columns are the party's own unless the source says otherwise.</p>
+    <p class="fine">Policies as published up to 27 November 2026, including the costings released on 26 November. Promises can change before the 28th. Figures in party columns are the party's own unless the source says otherwise.</p>
   </header>
 
   <nav class="picker" id="picker" aria-label="Issues"></nav>
 
   <section id="news">
     <h2>What's happened since 6 November</h2>
+
     <p class="gist">The last three weeks of the campaign, party by party. Issue sections below have been updated to match.</p>
     <div id="news-grid"></div>
+  </section>
+
+  <section id="costings">
+    <h2>Costings: do the numbers add up?</h2>
+    <p class="gist">Labor and the Coalition released full costings on 26 November, two days before polling day. The Coalition's were checked by the independent Parliamentary Budget Office (PBO). The Greens have costed some individual policies but haven't published a full set. One Nation won't publish its costings.</p>
+    <div class="table-wrap">
+      <table class="data costs">
+        <caption style="position:absolute;left:-9999px">Election costings compared</caption>
+        <thead><tr><th></th><th>Labor</th><th>Liberal and Nationals</th><th>One Nation</th><th>Greens</th></tr></thead>
+        <tbody>
+          <tr><td>Full costings published?</td><td>Yes, 26 Nov</td><td>Yes, 26 Nov</td><td>No</td><td>No, some policies only</td></tr>
+          <tr><td>Who checked them</td><td>Labor's document. Treasury costed some promises</td><td>PBO</td><td>Nobody</td><td>PBO, for some policies</td></tr>
+          <tr><td>New spending</td><td>$13.3b ($7.3b running costs, $6b capital)</td><td>Spending $3.2b lower over 4 years, after new promises</td><td>Not published</td><td>No total</td></tr>
+          <tr><td>Tax changes</td><td>No new taxes. Land tax relief</td><td>$4.46b+ in tax cuts to 2030-31</td><td>Cuts, cost not published</td><td>New taxes on banks, gambling and large property portfolios</td></tr>
+          <tr><td>Net debt</td><td>$195b by 2030-31</td><td>$176b, $20b lower over 4 years</td><td>Not published</td><td>Not published</td></tr>
+          <tr><td>Surplus</td><td>"Bigger surpluses every year", no figures</td><td>Cash surplus pushed back to 2032-33</td><td>Not published</td><td>Not published</td></tr>
+        </tbody>
+      </table>
+    </div>
+    <p class="tablenote">Treasury's 12 November baseline is $196.2b of net debt by mid-2030. Labor's and the Coalition's debt figures may not be measured at the same date. </p>
+    <div id="costs-grid"></div>
   </section>
   <div id="issues"></div>
 
@@ -236,7 +261,46 @@ const S = {
   wrl2:['AAP','https://www.theleader.com.au/story/9350906/major-transmission-project-paused-after-public-outcry/'],
   brief:['The Brief','https://www.thebrief.news/en/standard/article/47442/victorian-coalition-sets-out-plans-days-before-state-election'],
   oncost:['The New Daily','https://www.thenewdaily.com.au/news/state/vic/2026/11/02/one-nation-costings-secrecy'],
+  ccost:['ABC costings','https://www.abc.net.au/news/2026-11-26/coalition-costings-victorian-state-election-2026/107430554'],
+  abc26:['ABC 26 Nov','https://www.abc.net.au/news/2026-11-26/victorian-election-live-updates-labor-liberal-court-battle/107428608'],
+  abc27:['ABC 27 Nov','https://www.abc.net.au/news/2026-11-27/victorian-election-live-coalition-labor-costings-polling-day-eve/107433332'],
+  cbrief:['The Brief','https://www.thebrief.news/en/standard/article/47577/victorian-coalition-costings-propose-sewage-plant-lease-and-asset-sales'],
+  tac:['Fully Loaded','https://www.fullyloaded.com.au/victorian-election-road-maintenance-costings'],
+  aapcost:['AAP','https://dandenong.starcommunity.com.au/news/2026-11-26/privatisations-underpin-eleventh-hour-election-costings/'],
+  gtracker:['Election Tracker','https://electiontracker.au/elections/vic/2026/parties/greens/policies'],
+  pbo22:['PBO 2022','https://pbo.vic.gov.au/response/5693'],
 };
+
+// costings: what's in each party's numbers, and the risks
+const COSTS = {
+  labor:[ ['$13.3b of new promises: $4.2b health, $4.7b roads and transport, $2.4b schools, $1.6b police, land tax and manufacturing, and about $400m for local projects.','abc26'],
+          ['Says the plan is fully funded with no new taxes, and takes another $1b off debt, to $195b by 2030-31.','abc26'],
+          ['Doesn\'t list its savings and offsets one by one.','abc26'],
+          ['Risk: even with this plan, debt keeps climbing towards $195b. Treasury warned in August that rising debt and interest could cost Victoria its AA credit rating.','rating'] ],
+  coalition:[ ['Costed by the PBO. Net debt $20b lower over four years, at $176b, which also cuts the interest bill.','ccost'],
+          ['Biggest saving: a 90-year lease of Melbourne Water\'s Eastern and Western sewage treatment plants. The PBO puts it at $13.63b to 2030-31, including land sales.','ccost'],
+          ['Also: $5.73b from unallocated contingency funds, $5.69b from a smaller public service through attrition, and about $1b from selling SEC renewable projects.','ccost'],
+          ['Cancels level crossing removals at Yarraville, Spotswood and on the Upfield line, and delays Seaford past 2030. That saves about $2.1b after a $90m contract break fee.','ccost'],
+          ['Keeps free kinder at 15 hours rather than 30 (about $400m), and drops new kinders in "childcare deserts" (about $500m of capital works).','abc27'],
+          ['TAC pays $1.25b a year from 2027-28 to 2030-31. The PBO says that adds $3.4b of revenue, put towards roads.','tac'],
+          ['Tax cuts to 2030-31: emergency services levy $1.29b, first home buyer stamp duty $1.24b, payroll tax $667m, schools tax $626m, land tax $402m, short-stay tax $208m.','abc26'],
+          ['Risk: the surplus is a year later than promised and most of the debt cut comes from one-off asset sales.','abc26'] ],
+  onenation:[ ['Says it has costed its policies but won\'t publish them before the election.','oncost'],
+          ['Won\'t use the Parliamentary Budget Office. Warren Pickering says its projections can\'t be trusted.','oncost'],
+          ['Deputy leader Colleen Harkin says the party doesn\'t need its pledges costed before the election.','abc26'],
+          ['Risk: there\'s no way to check whether its tax cuts and its plan to cancel the Suburban Rail Loop add up.'] ],
+  greens:[ ['No full costings published as of 27 November, so there\'s no total for the platform.'],
+          ['Biggest revenue claim: a 0.1% quarterly levy on the big five banks\' Victorian liabilities, which it says raises $3b+ a year.','gpay'],
+          ['Its land tax on residential portfolios over $5m is PBO-costed at $6.4b over ten years, and pays for its stamp duty cuts.','gtracker'],
+          ['PBO modelling it commissioned says the rent freeze and cap would save the median renter $15,590 by 2030.','gtracker'],
+          ['Risk: much of its spending, like free public transport and $4b for public housing, relies on taxes that haven\'t been tested at this size. In 2022 the PBO\'s assessment of its whole platform found it would leave the budget worse off.','pbo22'] ],
+};
+const COST_NOTES = [
+  ['David Hayward (RMIT) says the Coalition\'s plan does fill the budget gap. But asset sales are a one-off fix that avoids the "tough, tough decisions".','abc26'],
+  ['Saul Eslake says moving over $3b out of the TAC could push up compulsory third-party insurance premiums, and the costings don\'t deal with that.','abc26'],
+  ['Jess Wilson says the sewage plant lease isn\'t privatisation and water bills won\'t rise. Ellen Sandell says it would send bills soaring, as she argues happened in the UK.','ccost'],
+  ['Both major parties released costings two days out, after early voting had started. Labor\'s Colin Brooks called the Coalition\'s timing "a level of cynicism".','ccost'],
+];
 
 const ISSUES = [
 { id:'growth', tab:'Economic growth', title:'Which plan gets growth going again?', who:['both','State and federal: states have tax, spending and planning. Rates and migration are federal'],
@@ -254,7 +318,8 @@ const ISSUES = [
            ['$22b over 10 years from a back-office hiring freeze.','abc'],
            ['Payroll tax relief for 23,000 businesses and faster housing approvals.','plan'],
            ['What has to be true: tax cuts and savings add up. RMIT\'s David Hayward finds a $9b hole and Saul Eslake says a surplus can\'t be reached this way. Jess Wilson says the plan is costed and credible.','econ'],
-           ['Treasury advice released 23 November found capping back-office jobs at June 2025 levels would save nothing. Treasury noted that is a different policy from the Coalition\'s freeze. Full Coalition costings are due in the last days of the campaign.','abc24'] ],
+           ['Treasury advice released 23 November found capping back-office jobs at June 2025 levels would save nothing. Treasury noted that is a different policy from the Coalition\'s freeze.','abc24'],
+           ['Its PBO-checked costings, released 26 November, put net debt at $176b, $20b lower, mainly from leasing sewage plants and other asset sales. See Costings above.','ccost'] ],
    onenation:[ ['Theory: cut tax and red tape, stop big projects, and make energy cheap.'],
            ['Cancel the Suburban Rail Loop and redirect the money.','on'],
            ['Sunset reviews of agencies covering about $35b a year, plus a "two out, one in" red-tape rule.','on'],
@@ -485,11 +550,13 @@ const NEWS = {
           ['12 Nov','Treasury\'s pre-election update: growth cut to 1% this year, unemployment rising to 5.25%, net debt $196.2b by 2030.','pebu'],
           ['19 Nov','Defended handing out how-to-vote cards that look like Greens ones. Promised wider smart-glasses bans, including in all schools.','abc19'],
           ['22 Nov','With polls pointing to defeat, Labor MPs are already arguing over whether replacing Allan was a mistake.','abc22'],
-          ['24-25 Nov','Says Treasury advice shows the Coalition\'s savings are "dodgy". Runs a "Don\'t risk it" campaign against a Coalition and One Nation government. Re-pitched free dental ($460m, 20 clinics) and 25,000+ first-home-buyer homes.','abc25'] ],
+          ['24-25 Nov','Says Treasury advice shows the Coalition\'s savings are "dodgy". Runs a "Don\'t risk it" campaign against a Coalition and One Nation government. Re-pitched free dental ($460m, 20 clinics) and 25,000+ first-home-buyer homes.','abc25'],
+          ['26 Nov','Released its costings: $13.3b of new promises, no new taxes, net debt $195b by 2030-31.','abc26'] ],
   coalition:[ ['8 Nov','Says full costings come in the "usual way" in the last days of the campaign, after early voting has started.','costings'],
           ['23 Nov','Treasury found a back-office hiring cap at June 2025 levels saves nothing. Treasury also said that\'s not the same policy as the Coalition\'s freeze.','abc24'],
           ['25 Nov','Promised a $5m "Clean Up Crew" for graffiti and rubbish, and more apartments around the CBD. Ruled out subsidies for new gas exploration.','abc25'],
           ['25 Nov','Wouldn\'t say whether she\'d accept One Nation support to govern. Her Kew how-to-vote card puts One Nation ahead of Labor and the Greens.','abc25'],
+          ['26 Nov','Released PBO-checked costings: lease two Melbourne sewage plants, sell SEC renewables, cancel or delay four level crossing removals and cut the free kinder expansion. Net debt $20b lower, at $176b.','ccost'],
           ['Late Nov','Also confirmed: treaty repeal, "adult crime, adult time" for 20 serious offences, recriminalising begging, and widening the construction royal commission.','brief'] ],
   onenation:[ ['2 Nov','Won\'t publish its policy costings before the election or use the Parliamentary Budget Office. Promised a live government spending website.','oncost'],
           ['24 Nov','Warren Pickering says One Nation has "no desire" to form a coalition with the Liberals and Nationals, and is aiming for at least the balance of power.','abc24'],
@@ -551,6 +618,21 @@ addLink('news','Latest news');
     col.append(ul); grid.append(col);
   }
   document.getElementById('news-grid').append(grid);
+}
+
+// costings
+addLink('costings','Costings');
+{
+  const grid=el('div','parties');
+  for(const [k,name] of PARTIES){
+    const col=el('div','party '+k); col.append(el('h3',null,name));
+    const ul=el('ul');
+    for(const [t,src] of COSTS[k]){ const li=el('li',null,t+' '); if(src) li.append(cite(src)); ul.append(li); }
+    col.append(ul); grid.append(col);
+  }
+  const n=el('div','notes'); n.append(el('h3',null,'What the experts and rivals say'));
+  const ul=el('ul'); COST_NOTES.forEach(([t,src])=>{ const li=el('li',null,t+' '); li.append(cite(src)); ul.append(li); }); n.append(ul);
+  document.getElementById('costs-grid').append(grid,n);
 }
 
 for(const i of ISSUES){
